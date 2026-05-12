@@ -17,6 +17,7 @@
  * we explain *why* and suggest a next step the agent can take.
  */
 
+import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DEV_MODE } from "../config.js";
@@ -891,6 +892,12 @@ export function registerPayForServiceTool(server: McpServer): void {
         // Issuing webhook will overwrite this row's status when the actual
         // charge lands. We log "success" because everything Spendex controls
         // succeeded — the only remaining failure modes are merchant-side.
+        //
+        // SECURITY: "audit log failure is fatal" (CLAUDE.md). If we cannot
+        // record this transaction we MUST NOT surface card details to the
+        // agent — an unrecorded reveal would make dispute resolution
+        // impossible. We swallow the in-memory `responseText` (the formatted
+        // PAN/expiry/CVC string) and return a sanitized error instead.
         try {
           await logTransaction({
             userId: user.id,
@@ -901,14 +908,39 @@ export function registerPayForServiceTool(server: McpServer): void {
             transactionType: "one_shot",
           });
         } catch (logErr) {
-          // We've already returned the card to the agent in our head — the
-          // user must know if their charge isn't audit-logged. Return the
-          // card details *and* surface the audit-log failure so support can
-          // reconcile it before the Stripe Issuing authorization arrives.
+          const incidentId = randomUUID();
+          console.error(
+            `[pay_for_service] audit log write FAILED — suppressing card reveal ` +
+            `user=${user.id} service=${input.service} amount=${input.amount_usd} ` +
+            `incident_id=${incidentId}: ${errorMessage(logErr, "unknown error")}`
+          );
+
+          // Best-effort secondary audit row capturing the failure itself.
+          // This row has no card data; it just records that a charge was
+          // preventively declined because the primary log write failed.
+          // If this write also fails the operator still has the stderr line
+          // above with the incident_id.
+          try {
+            await logTransaction({
+              userId: user.id,
+              service: input.service,
+              status: "payment_failed",
+              amountUsd: input.amount_usd,
+              description: `${input.description} — preventive decline, incident ${incidentId}`,
+              transactionType: "one_shot",
+              error: "audit_log_failure",
+            });
+          } catch (secondaryErr) {
+            console.error(
+              `[pay_for_service] secondary audit log write also failed ` +
+              `incident_id=${incidentId}: ${errorMessage(secondaryErr, "unknown error")}`
+            );
+          }
+
           return textResponse(
-            `${responseText}\n\n` +
-            `WARNING: Audit log write failed (${errorMessage(logErr, "unknown error")}). ` +
-            `Contact support at spendexai.com/support so this charge can be reconciled.`,
+            `INTERNAL ERROR — payment authorization succeeded but audit log failed.\n` +
+            `The charge has been DECLINED preventively to avoid an unrecorded transaction.\n` +
+            `Contact support at support@spendexai.com with this incident ID: ${incidentId}.`,
             { isError: true }
           );
         }

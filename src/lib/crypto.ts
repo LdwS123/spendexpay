@@ -6,9 +6,15 @@
  * password is the only piece of long-lived sensitive data we hold for that
  * account — losing it locks the user out, leaking it gives full account access.
  *
- * We use AES-256-GCM with a 12-byte random IV per encryption. Output is
- * `<iv-hex>:<authTag-hex>:<ciphertext-hex>` so a future key rotation can be
- * implemented by prefixing a key-id without breaking the wire format.
+ * We use AES-256-GCM with a 12-byte random IV per encryption. Output is the
+ * base64 encoding of `[12-byte IV][16-byte authTag][ciphertext]`. This format
+ * matches the dashboard's `dashboard/src/lib/crypto.ts` so that managed-account
+ * passwords written by the MCP server can be revealed by the dashboard without
+ * any conversion layer in between.
+ *
+ * The legacy `<iv-hex>:<authTag-hex>:<ciphertext-hex>` format is still accepted
+ * on decryption so existing dev-mode rows do not become unreadable after the
+ * upgrade. Newly encrypted blobs always use the base64 format.
  *
  * The key is read from MANAGED_ACCOUNT_ENCRYPTION_KEY at first use. In
  * SPENDEX_DEV mode a zeroed fallback key is used so local development never
@@ -79,9 +85,12 @@ function getKey(): Buffer {
 /**
  * Encrypt a UTF-8 plaintext.
  *
- * Output format: `<iv>:<authTag>:<ciphertext>`, all hex-encoded. Each call
- * generates a fresh IV so the same plaintext never encrypts to the same blob
- * (defends against frequency analysis of repeated common passwords).
+ * Output format: base64 of `[12-byte IV][16-byte authTag][ciphertext]`. Each
+ * call generates a fresh IV so the same plaintext never encrypts to the same
+ * blob (defends against frequency analysis of repeated common passwords).
+ *
+ * The format is intentionally identical to the dashboard's `encryptManagedPassword`
+ * so the dashboard can decrypt rows written by the MCP server byte-for-byte.
  */
 export function encryptSecret(plaintext: string): string {
   const key = getKey();
@@ -94,17 +103,65 @@ export function encryptSecret(plaintext: string): string {
   ]);
   const authTag = cipher.getAuthTag();
 
-  return `${iv.toString("hex")}:${authTag.toString("hex")}:${ciphertext.toString("hex")}`;
+  return Buffer.concat([iv, authTag, ciphertext]).toString("base64");
 }
 
 /**
  * Decrypt a blob produced by {@link encryptSecret}.
+ *
+ * Accepts both the current base64 format (`[iv][tag][ciphertext]`) and the
+ * legacy hex-with-colons format (`<iv-hex>:<authTag-hex>:<ciphertext-hex>`)
+ * so dev-mode rows written before the format change stay readable. The legacy
+ * branch is detected by the presence of a colon, which never appears inside
+ * a base64-encoded blob.
  *
  * Throws if the blob is malformed or the auth tag does not verify — never
  * returns garbage plaintext. Callers must treat a thrown error as "credentials
  * unrecoverable" and surface that to the user.
  */
 export function decryptSecret(blob: string): string {
+  if (blob.includes(":")) {
+    return decryptLegacyHexFormat(blob);
+  }
+  return decryptBase64Format(blob);
+}
+
+/**
+ * Decrypt the current base64 format produced by {@link encryptSecret}.
+ *
+ * Layout: `[12-byte IV][16-byte authTag][ciphertext]`, base64-encoded.
+ */
+function decryptBase64Format(blob: string): string {
+  const buf = Buffer.from(blob, "base64");
+  if (buf.length < IV_BYTES + AUTH_TAG_BYTES + 1) {
+    throw new Error(
+      `Encrypted payload is too short (got ${buf.length} bytes, need at least ${IV_BYTES + AUTH_TAG_BYTES + 1}).`
+    );
+  }
+
+  const iv = buf.subarray(0, IV_BYTES);
+  const authTag = buf.subarray(IV_BYTES, IV_BYTES + AUTH_TAG_BYTES);
+  const ciphertext = buf.subarray(IV_BYTES + AUTH_TAG_BYTES);
+
+  const decipher = createDecipheriv(ALGORITHM, getKey(), iv);
+  decipher.setAuthTag(authTag);
+
+  const plaintext = Buffer.concat([
+    decipher.update(ciphertext),
+    decipher.final(),
+  ]);
+
+  return plaintext.toString("utf8");
+}
+
+/**
+ * Decrypt the legacy `<iv-hex>:<authTag-hex>:<ciphertext-hex>` format.
+ *
+ * Kept so encrypted rows produced before the base64 migration stay readable.
+ * Do not call from new code — {@link decryptSecret} routes to this branch on
+ * its own when a colon is present.
+ */
+function decryptLegacyHexFormat(blob: string): string {
   const parts = blob.split(":");
   if (parts.length !== 3) {
     throw new Error("Encrypted blob has wrong format (expected iv:tag:ciphertext).");

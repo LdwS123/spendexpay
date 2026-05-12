@@ -317,6 +317,17 @@ npm run lint               # tsc --noEmit, type-only check
 
 Set `SPENDEX_DEV=true` in your environment to bypass Stripe and Supabase entirely. Every tool call returns a simulated success. Use this when iterating on tool schemas — no real money moves, no real DB writes.
 
+### Database migrations
+
+Canonical SQL migrations live in [`/migrations/`](./migrations/). The
+[`/supabase/migrations/`](./supabase/migrations/) directory is an exact
+mirror kept in sync for the Supabase CLI — never edit it directly; copy
+from `/migrations/` instead.
+
+Apply migrations in order **001 → 007** on a fresh Supabase project. See
+[`DEPLOY.md`](./DEPLOY.md#4-supabase--apply-migrations) for the full
+runbook and a per-file changelog.
+
 ---
 
 ## License

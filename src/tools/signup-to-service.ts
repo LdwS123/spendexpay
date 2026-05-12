@@ -207,7 +207,15 @@ export function registerSignupToServiceTool(server: McpServer): void {
         );
       }
 
-      // Auto-signup is opt-out (null is fine). A hard `false` blocks.
+      // Auto-signup requires EXPLICIT consent. Creating an account binds the
+      // user to a third-party Terms of Service, so we refuse to proceed unless
+      // the user has set `allow_auto_signup = true` on a rule.
+      //
+      //   - true  → user explicitly opted in; proceed.
+      //   - false → user explicitly opted out; decline (informational).
+      //   - null  → no rule configured; guide the agent to request consent
+      //            inline via `request_user_consent`. This is NOT an error —
+      //            it's a polite refusal pointing at the right next step.
       let allowance: boolean | null;
       try {
         allowance = await getAutoSignupAllowance(user.id);
@@ -219,7 +227,22 @@ export function registerSignupToServiceTool(server: McpServer): void {
       }
       if (allowance === false) {
         return textResponse(
-          "User has not authorized auto-signup. Ask the user to enable it in their Spendex dashboard rules."
+          "User has explicitly disabled auto-signup. Ask the user to enable it in their Spendex dashboard rules before retrying."
+        );
+      }
+      if (allowance !== true) {
+        return textResponse(
+          `AUTO-SIGNUP REQUIRES EXPLICIT CONSENT\n` +
+          `\n` +
+          `The user hasn't explicitly enabled auto-signup. Before this tool can create\n` +
+          `an account on their behalf, you must:\n` +
+          `\n` +
+          `1. Call request_user_consent with action="signup_to_service", service="${input.service}",\n` +
+          `   and explain why an account is needed in the context.\n` +
+          `2. After the user approves, retry signup_to_service.\n` +
+          `\n` +
+          `This is required because creating an account binds the user legally to that\n` +
+          `service's Terms of Service.`
         );
       }
 

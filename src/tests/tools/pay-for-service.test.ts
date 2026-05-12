@@ -512,6 +512,60 @@ describe("registerPayForServiceTool — explicit native_api preference", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Audit log failure must NOT leak card details
+// ---------------------------------------------------------------------------
+
+describe("registerPayForServiceTool — audit log failure", () => {
+  it("preventively declines and does NOT leak PAN/CVC when the audit log write throws", async () => {
+    // First call (the primary success log) throws; second call (the
+    // secondary payment_failed log) succeeds. The tool must NOT include the
+    // card details in its response — "audit failure is fatal" (CLAUDE.md).
+    vi.mocked(logTransaction)
+      .mockRejectedValueOnce(new Error("supabase write timeout"))
+      .mockResolvedValueOnce(undefined);
+
+    const result = await handler!(INPUT);
+
+    expect(result.isError).toBe(true);
+    const text = result.content[0]!.text;
+
+    // The error message the agent sees.
+    expect(text).toMatch(/INTERNAL ERROR/);
+    expect(text).toMatch(/audit log failed/);
+    expect(text).toMatch(/DECLINED preventively/);
+    expect(text).toMatch(/support@spendexai\.com/);
+    // Incident id present so support can correlate logs.
+    expect(text).toMatch(
+      /incident ID: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
+    );
+
+    // CRITICAL: no card data in the response. Check the PAN (raw and spaced),
+    // the CVC, the expiry, the cardholder hint, and the underlying error
+    // message (which would imply we're leaking server internals).
+    expect(text).not.toContain("4242424242424242");
+    expect(text).not.toContain("4242 4242 4242 4242");
+    expect(text).not.toMatch(/CVC: 123/);
+    expect(text).not.toMatch(/Expiry: 12\/30/);
+    expect(text).not.toMatch(/APPROVED/);
+    expect(text).not.toMatch(/Use this card/);
+    expect(text).not.toMatch(/supabase write timeout/);
+
+    // A secondary "payment_failed / audit_log_failure" row is written so
+    // the trace exists even after the preventive decline.
+    expect(vi.mocked(logTransaction)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(logTransaction)).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        userId: MOCK_USER.id,
+        service: "vercel",
+        status: "payment_failed",
+        error: "audit_log_failure",
+      })
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Duplicate in-flight
 // ---------------------------------------------------------------------------
 

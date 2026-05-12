@@ -459,20 +459,41 @@ async function lookupUserByCardholderId(
 ): Promise<SpendexUserRow | null> {
   const supabase = getSupabase();
 
-  const { data, error } = await supabase
-    .from("users")
-    .select("id, max_auto_charge_usd, email, display_name")
+  // Step 1: resolve cardholder -> user_id via virtual_cards.
+  // The stripe_cardholder_id lives on virtual_cards (set in api/onboarding),
+  // NOT on the users table — querying users directly returns nothing and
+  // would auto-decline every authorization.
+  const { data: card, error: cardError } = await supabase
+    .from("virtual_cards")
+    .select("user_id")
     .eq("stripe_cardholder_id", cardholderId)
-    .single();
+    .eq("status", "active")
+    .maybeSingle();
 
-  if (error) {
-    if (error.code === "PGRST116") return null;
+  if (cardError) {
     throw new Error(
-      `Supabase error looking up cardholder "${cardholderId}": ${error.message} (${error.code})`
+      `Supabase error looking up virtual_cards for cardholder "${cardholderId}": ${cardError.message} (${cardError.code})`
     );
   }
 
-  return data as SpendexUserRow;
+  if (!card) return null;
+
+  // Step 2: fetch the user row by user_id.
+  const { data: user, error: userError } = await supabase
+    .from("users")
+    .select("id, max_auto_charge_usd, email, display_name")
+    .eq("id", card.user_id)
+    .maybeSingle();
+
+  if (userError) {
+    throw new Error(
+      `Supabase error looking up user "${card.user_id}" for cardholder "${cardholderId}": ${userError.message} (${userError.code})`
+    );
+  }
+
+  if (!user) return null;
+
+  return user as SpendexUserRow;
 }
 
 async function fetchActiveRules(userId: string): Promise<ActiveRule[]> {

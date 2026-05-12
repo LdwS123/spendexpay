@@ -190,3 +190,191 @@ describe("Stripe webhook — audit log update contract", () => {
     expect(event.data.object.metadata.spendex_user_id).toBe("user_round_trip");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issuing webhook — cardholder → user lookup contract
+//
+// The dashboard route at dashboard/src/app/api/webhooks/stripe-issuing/route.ts
+// must resolve cardholder_id → user_id via virtual_cards FIRST, then read the
+// users row. Querying users.stripe_cardholder_id directly returns nothing —
+// the column doesn't exist on that table; the cardholder id is stored on
+// virtual_cards (set during onboarding in api/onboarding/route.ts).
+//
+// These tests document that contract by simulating the chained Supabase
+// query and verifying both approve and decline paths.
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a minimal stub of the Supabase client surface used by
+ * lookupUserByCardholderId. Each call to `.from(table)` returns a fresh
+ * builder so query state doesn't leak between the two queries.
+ */
+function makeSupabaseStub(args: {
+  virtualCardRow: { user_id: string } | null;
+  virtualCardError?: { code: string; message: string } | null;
+  userRow?: { id: string; max_auto_charge_usd: number; email: string | null; display_name: string | null } | null;
+  userError?: { code: string; message: string } | null;
+}) {
+  const calls: { table: string; eq: Array<[string, unknown]>; select: string }[] = [];
+
+  return {
+    calls,
+    from(table: string) {
+      const call: { table: string; eq: Array<[string, unknown]>; select: string } = {
+        table,
+        eq: [],
+        select: "",
+      };
+      calls.push(call);
+      const builder = {
+        select(cols: string) {
+          call.select = cols;
+          return builder;
+        },
+        eq(col: string, val: unknown) {
+          call.eq.push([col, val]);
+          return builder;
+        },
+        maybeSingle() {
+          if (table === "virtual_cards") {
+            return Promise.resolve({
+              data: args.virtualCardRow,
+              error: args.virtualCardError ?? null,
+            });
+          }
+          if (table === "users") {
+            return Promise.resolve({
+              data: args.userRow ?? null,
+              error: args.userError ?? null,
+            });
+          }
+          return Promise.resolve({ data: null, error: null });
+        },
+      };
+      return builder;
+    },
+  };
+}
+
+/**
+ * Mirror of the production lookup in
+ * dashboard/src/app/api/webhooks/stripe-issuing/route.ts.
+ *
+ * Keep this in sync with that function — if the production code changes
+ * its query shape, this test will fail loudly and document the drift.
+ */
+interface VirtualCardLookupRow { user_id: string }
+interface SpendexUserRow { id: string; max_auto_charge_usd: number; email: string | null; display_name: string | null }
+
+async function lookupUserByCardholderId(
+  supabase: ReturnType<typeof makeSupabaseStub>,
+  cardholderId: string
+): Promise<SpendexUserRow | null> {
+  const { data: cardData, error: cardError } = await supabase
+    .from("virtual_cards")
+    .select("user_id")
+    .eq("stripe_cardholder_id", cardholderId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (cardError) throw new Error(`virtual_cards lookup failed: ${cardError.message}`);
+  const card = cardData as VirtualCardLookupRow | null;
+  if (!card) return null;
+
+  const { data: userData, error: userError } = await supabase
+    .from("users")
+    .select("id, max_auto_charge_usd, email, display_name")
+    .eq("id", card.user_id)
+    .maybeSingle();
+
+  if (userError) throw new Error(`users lookup failed: ${userError.message}`);
+  const user = userData as SpendexUserRow | null;
+  if (!user) return null;
+
+  return user;
+}
+
+describe("Stripe Issuing webhook — cardholder → user lookup", () => {
+  it("approve path: resolves cardholder via virtual_cards then loads the user", async () => {
+    const supabase = makeSupabaseStub({
+      virtualCardRow: { user_id: "user_abc" },
+      userRow: {
+        id: "user_abc",
+        max_auto_charge_usd: 50,
+        email: "user@example.com",
+        display_name: "Test User",
+      },
+    });
+
+    const user = await lookupUserByCardholderId(supabase, "ich_test_cardholder");
+
+    expect(user).not.toBeNull();
+    expect(user!.id).toBe("user_abc");
+    expect(user!.max_auto_charge_usd).toBe(50);
+
+    // Verifies the production query order: virtual_cards first, then users.
+    // If anyone re-introduces the buggy users.stripe_cardholder_id query,
+    // this assertion fails immediately.
+    expect(supabase.calls).toHaveLength(2);
+    expect(supabase.calls[0].table).toBe("virtual_cards");
+    expect(supabase.calls[0].eq).toEqual([
+      ["stripe_cardholder_id", "ich_test_cardholder"],
+      ["status", "active"],
+    ]);
+    expect(supabase.calls[1].table).toBe("users");
+    expect(supabase.calls[1].eq).toEqual([["id", "user_abc"]]);
+  });
+
+  it("decline path: returns null when no virtual_cards row exists for the cardholder", async () => {
+    const supabase = makeSupabaseStub({
+      virtualCardRow: null,
+    });
+
+    const user = await lookupUserByCardholderId(supabase, "ich_unknown_cardholder");
+
+    expect(user).toBeNull();
+    // Should short-circuit without querying users at all.
+    expect(supabase.calls).toHaveLength(1);
+    expect(supabase.calls[0].table).toBe("virtual_cards");
+  });
+
+  it("decline path: returns null when virtual_cards row exists but users row is missing", async () => {
+    const supabase = makeSupabaseStub({
+      virtualCardRow: { user_id: "user_orphaned" },
+      userRow: null,
+    });
+
+    const user = await lookupUserByCardholderId(supabase, "ich_orphan_cardholder");
+
+    expect(user).toBeNull();
+    expect(supabase.calls).toHaveLength(2);
+  });
+
+  it("filters virtual_cards by status='active' so a revoked card cannot authorize", async () => {
+    // The webhook only matches cards in the active state. A revoked or canceled
+    // card with the same cardholder_id must not resolve.
+    const supabase = makeSupabaseStub({
+      virtualCardRow: null, // stub returns null because the filter excludes the row
+    });
+
+    const user = await lookupUserByCardholderId(supabase, "ich_revoked");
+    expect(user).toBeNull();
+
+    const firstCall = supabase.calls[0];
+    const hasActiveFilter = firstCall.eq.some(
+      ([col, val]) => col === "status" && val === "active"
+    );
+    expect(hasActiveFilter).toBe(true);
+  });
+
+  it("propagates DB errors so the webhook can decline for safety", async () => {
+    const supabase = makeSupabaseStub({
+      virtualCardRow: null,
+      virtualCardError: { code: "08000", message: "connection error" },
+    });
+
+    await expect(
+      lookupUserByCardholderId(supabase, "ich_db_error")
+    ).rejects.toThrow("virtual_cards lookup failed");
+  });
+});

@@ -145,7 +145,10 @@ beforeEach(() => {
   vi.mocked(checkRateLimit).mockReturnValue({ allowed: true });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   vi.mocked(getUserByMcpToken).mockResolvedValue(MOCK_USER as any);
-  vi.mocked(getAutoSignupAllowance).mockResolvedValue(null);
+  // Auto-signup is now strict opt-in: tests that exercise the happy path
+  // must explicitly say allow_auto_signup=true. Individual tests below
+  // override this to null/false to exercise the consent-required branches.
+  vi.mocked(getAutoSignupAllowance).mockResolvedValue(true);
   vi.mocked(getActiveVirtualCardForUser).mockResolvedValue({
     stripe_card_id: "ic_test_123",
   });
@@ -159,13 +162,13 @@ beforeEach(() => {
   });
   vi.mocked(generateShortHash).mockReturnValue("abc123def456");
   vi.mocked(generateSecurePassword).mockReturnValue("StrongPassword!Mock-32-Chars-X");
-  vi.mocked(encryptSecret).mockReturnValue("iv:tag:ciphertext");
+  vi.mocked(encryptSecret).mockReturnValue("ZW5jcnlwdGVkLWJsb2ItYmFzZTY0LXNlbnRpbmVsLXZhbHVlAAAA");
   vi.mocked(createManagedAccount).mockResolvedValue({
     id: "11111111-1111-1111-1111-111111111111",
     user_id: MOCK_USER.id,
     service: "vercel",
     email_alias: "signup-abc123def456@mail.spendexai.com",
-    password_encrypted: "iv:tag:ciphertext",
+    password_encrypted: "ZW5jcnlwdGVkLWJsb2ItYmFzZTY0LXNlbnRpbmVsLXZhbHVlAAAA",
     status: "pending",
     external_account_id: null,
     created_at: new Date().toISOString(),
@@ -256,7 +259,7 @@ describe("registerSignupToServiceTool — explicit opt-out", () => {
     // Rule-driven decline — not an infrastructure error.
     expect(result.isError).toBeUndefined();
     const text = result.content[0]!.text;
-    expect(text).toMatch(/User has not authorized auto-signup/);
+    expect(text).toMatch(/explicitly disabled auto-signup/);
     expect(text).toMatch(/dashboard rules/);
 
     // Critical: no card reveal, no managed-account row, no password generated.
@@ -297,7 +300,7 @@ describe("registerSignupToServiceTool — happy path", () => {
         userId: MOCK_USER.id,
         service: "vercel",
         emailAlias: "signup-abc123def456@mail.spendexai.com",
-        passwordEncrypted: "iv:tag:ciphertext",
+        passwordEncrypted: "ZW5jcnlwdGVkLWJsb2ItYmFzZTY0LXNlbnRpbmVsLXZhbHVlAAAA",
       })
     );
     // Audit log written with the managed-account id as the agent_id.

@@ -159,21 +159,32 @@ fly scale vm shared-cpu-2x --memory 512            # bump the VM size
 
 ## 4. Supabase — apply migrations
 
-The repo ships four migrations in `migrations/`:
+**Canonical migrations live in [`/migrations/`](./migrations/).** The
+[`/supabase/migrations/`](./supabase/migrations/) directory is an exact
+mirror so the Supabase CLI can find the same files — never edit it
+directly; copy from `/migrations/` instead. See
+[`supabase/migrations/README.md`](./supabase/migrations/README.md) for
+details.
+
+The repo ships seven migrations. Apply them in numeric order on a fresh
+Supabase project (**001 → 007**):
 
 | File | Adds |
 |---|---|
-| `001_initial_schema.sql` | `users`, `transactions`, `audit_log`, `idempotency_keys`, `webhook_events`. |
+| `001_initial_schema.sql` | `users`, `audit_logs`, `rules`, `virtual_cards`, `service_tokens`. |
 | `002_managed_accounts.sql` | `managed_accounts` (encrypted credentials + email alias) and `inbound_emails`. |
 | `003_consent_layer.sql` | `user_consent_preferences` and `consent_requests`. |
-| `004_add_missing_service_tokens.sql` | Adds `huggingface_token`, `gamma_api_key`, `cloudflare_token`, `cloudflare_account_id`, `supabase_user_token` to `users`. |
+| `004_add_missing_service_tokens.sql` | `huggingface_token`, `gamma_api_key`, `cloudflare_token`, `cloudflare_account_id`, `supabase_user_token` on `users`. |
+| `005_audit_logs_product_meta.sql` | Product preview columns on `audit_logs` (`product_url`, `product_name`, `product_image_url`, `currency`, `merchant_country`). |
+| `006_audit_logs_merchant_data.sql` | Stripe Issuing merchant enrichment columns on `audit_logs` (`merchant_name`, `merchant_city`, `merchant_category`, `merchant_network_id`, `card_country`). |
+| `007_audit_logs_status_expand.sql` | Expands `audit_logs.status` check to all values the code writes; adds `transaction_type` + `agent_id` on `audit_logs` and `display_name` + `phone_number` on `users`. |
 
 ### Option A — Supabase dashboard SQL editor (recommended for first deploy)
 
 1. Open the Supabase project → SQL editor.
 2. Paste the contents of `migrations/001_initial_schema.sql` and run.
-3. Repeat for `002`, `003`, `004` **in order**.
-4. Verify with `select tablename from pg_tables where schemaname = 'public';` — you should see `users`, `transactions`, `audit_log`, `idempotency_keys`, `webhook_events`, `managed_accounts`, `inbound_emails`, `user_consent_preferences`, `consent_requests`.
+3. Repeat for `002` → `007` **in order**.
+4. Verify with `select tablename from pg_tables where schemaname = 'public';` — you should see `users`, `audit_logs`, `rules`, `virtual_cards`, `service_tokens`, `managed_accounts`, `inbound_emails`, `user_consent_preferences`, `consent_requests`.
 
 ### Option B — Supabase MCP (faster for repeat deploys)
 
@@ -187,7 +198,7 @@ mcp__claude_ai_Supabase__apply_migration(
 )
 ```
 
-Then `002`, `003`, `004` in the same way.
+Then `002` → `007` in the same way.
 
 ### Verifying RLS
 
