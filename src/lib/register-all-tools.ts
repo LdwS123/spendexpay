@@ -23,6 +23,8 @@ import { registerSubscribeService } from "../tools/subscribe-service.js";
 import { registerCancelSubscriptionTool } from "../tools/cancel-subscription.js";
 import { registerListSubscriptionsTool } from "../tools/list-subscriptions.js";
 import { registerFetchProductPreviewTool } from "../tools/fetch-product-preview.js";
+import { registerGetProductVariantsTool } from "../tools/get-product-variants.js";
+import { registerSearchProductsTool } from "../tools/search-products.js";
 import { registerSignupToServiceTool } from "../tools/signup-to-service.js";
 import {
   registerRequestConsentTool,
@@ -32,6 +34,8 @@ import { registerSubmitConsentDecisionTool } from "../tools/submit-consent.js";
 import { registerCheckConsentStatusTool } from "../tools/check-consent-status.js";
 import { registerGetVerificationEmailTool } from "../tools/get-verification-email.js";
 import { registerCompleteSignupTool } from "../tools/complete-signup.js";
+import { registerPrepareAmazonCheckoutTool } from "../tools/prepare-amazon-checkout.js";
+import { registerCompletePurchaseTool } from "../tools/complete-purchase.js";
 
 // Introspection — agent self-monitoring.
 import { registerCheckBalanceTool } from "../tools/check-balance.js";
@@ -76,12 +80,27 @@ export function registerAllTools(server: McpServer): void {
   registerCancelSubscriptionTool(server);
   registerListSubscriptionsTool(server);
   registerFetchProductPreviewTool(server);
+  // get_product_variants sits directly after fetch_product_preview so a
+  // shopping agent calls them as a natural pair: preview to confirm the
+  // product, then variants to surface color/size/storage choices before
+  // request_user_consent.
+  registerGetProductVariantsTool(server);
+  // search_products: discovery step that runs BEFORE fetch_product_preview
+  // when the user describes what they want but has not pasted a URL. Sits
+  // here in PRIMARY so MCP clients see the natural product-shopping flow
+  // (search -> preview -> consent -> pay) in source order.
+  registerSearchProductsTool(server);
   registerSignupToServiceTool(server);
   registerRequestConsentTool(server);
   registerSubmitConsentDecisionTool(server);
   registerCheckConsentStatusTool(server);
   registerGetVerificationEmailTool(server);
   registerCompleteSignupTool(server);
+  // Merchant-specific Computer-Use playbooks + the post-checkout reporter that
+  // closes the loop. Live in PRIMARY because they sit on the canonical
+  // "agent shops at a non-API merchant" flow that v0.2 expects.
+  registerPrepareAmazonCheckoutTool(server);
+  registerCompletePurchaseTool(server);
 
   // ---------------------------------------------------------------------------
   // INTROSPECTION: state queries an agent runs *before* committing to a charge

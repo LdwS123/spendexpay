@@ -62,7 +62,10 @@ const ActionEnum = z
     "default option set the user sees on the approval screen."
   );
 
-const RequestConsentInput = z.object({
+// Exported for direct schema-validation tests. The MCP server applies this
+// schema before our handler runs; tests that drive the handler directly via
+// a mocked `registerTool` need access to it to exercise validation paths.
+export const RequestConsentInput = z.object({
   action: ActionEnum,
   service: z
     .string()
@@ -142,6 +145,87 @@ const RequestConsentInput = z.object({
     .optional()
     .describe(
       "Optional short product description. Rendered below the title."
+    ),
+  product_variants: z
+    .array(
+      z.object({
+        axis: z
+          .string()
+          .min(1)
+          .describe(
+            "Variant axis label (e.g. 'color', 'size', 'storage'). " +
+            "Rendered as a section title above the option chips."
+          ),
+        options: z
+          .array(
+            z.object({
+              name: z
+                .string()
+                .min(1)
+                .describe("Human label shown on the chip (e.g. 'Midnight Blue')."),
+              value: z
+                .string()
+                .min(1)
+                .describe("SKU identifier for the option (e.g. 'blue')."),
+              price_delta_usd: z
+                .number()
+                .optional()
+                .describe(
+                  "Optional price adjustment in USD added on top of base_price_usd " +
+                  "when this option is selected (can be negative)."
+                ),
+              image_url: z
+                .string()
+                .url()
+                .optional()
+                .describe(
+                  "Optional image URL. If present, swaps the main product " +
+                  "preview image when the chip is selected."
+                ),
+              available: z
+                .boolean()
+                .optional()
+                .describe("Defaults to true. Out-of-stock chips render disabled."),
+            })
+          )
+          .min(1)
+          .describe("At least one option must be provided for each axis."),
+        default_value: z
+          .string()
+          .optional()
+          .describe(
+            "Pre-select this option value when the widget opens. " +
+            "Falls back to the first option if omitted or not found."
+          ),
+      })
+    )
+    .optional()
+    .describe(
+      "Optional product variants for an Amazon-like shopping experience. " +
+      "Each axis (color, size, storage) renders as a row of chips the user " +
+      "can pick. The total updates live as the user changes selections."
+    ),
+  min_quantity: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe("Minimum purchasable quantity. Defaults to 1."),
+  max_quantity: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe(
+      "Maximum purchasable quantity. Defaults to 1 (single-item, no picker)."
+    ),
+  base_price_usd: z
+    .number()
+    .nonnegative()
+    .optional()
+    .describe(
+      "Per-unit price before variant deltas. Used by the widget to compute " +
+      "the live total. Falls back to `amount_usd` when omitted."
     ),
   mcp_token: z
     .string()
@@ -347,6 +431,43 @@ function formatApprovedAuto(params: {
 }
 
 /**
+ * Resolve a variant's default selection. Falls back to the first option
+ * when `default_value` is missing or doesn't match any option.
+ */
+function resolveVariantDefault(
+  variant: NonNullable<RequestConsentInputType["product_variants"]>[number]
+): NonNullable<RequestConsentInputType["product_variants"]>[number]["options"][number] {
+  if (variant.default_value !== undefined) {
+    const match = variant.options.find((o) => o.value === variant.default_value);
+    if (match) return match;
+  }
+  return variant.options[0]!;
+}
+
+/**
+ * Compute the initial total the markdown fallback should display. Mirrors
+ * the widget's live computation but for the *default* selection set so the
+ * non-widget contract stays self-explanatory.
+ */
+function computeDefaultTotal(input: RequestConsentInputType): number | null {
+  const base =
+    input.base_price_usd ??
+    (input.amount_usd !== undefined ? input.amount_usd : null);
+  if (base === null) return null;
+  let total = base;
+  if (input.product_variants) {
+    for (const variant of input.product_variants) {
+      const selected = resolveVariantDefault(variant);
+      if (typeof selected.price_delta_usd === "number") {
+        total += selected.price_delta_usd;
+      }
+    }
+  }
+  const qty = Math.max(input.min_quantity ?? 1, 1);
+  return total * qty;
+}
+
+/**
  * Markdown fallback for hosts that can't render the widget. This is the same
  * shape that pre-widget clients have been consuming since v0.1 — keep it
  * verbatim so the test contract and the agent's parser stay stable.
@@ -370,6 +491,34 @@ function formatConsentPromptMarkdown(params: {
   const amountLine =
     input.amount_usd !== undefined
       ? `Amount: $${input.amount_usd.toFixed(2)}\n`
+      : "";
+
+  // Variants & quantity block — listed only when the agent supplied them so
+  // pre-widget clients without shopping support stay byte-compatible.
+  let variantsBlock = "";
+  if (input.product_variants && input.product_variants.length > 0) {
+    const lines: string[] = ["Variants:"];
+    for (const variant of input.product_variants) {
+      const def = resolveVariantDefault(variant);
+      const others = variant.options
+        .filter((o) => o.value !== def.value)
+        .map((o) => o.name);
+      const othersText =
+        others.length > 0 ? ` (also available: ${others.join(", ")})` : "";
+      lines.push(`  ${variant.axis}: ${def.name} (default)${othersText}`);
+    }
+    variantsBlock = lines.join("\n") + "\n";
+  }
+
+  const maxQty = input.max_quantity ?? 1;
+  const minQty = Math.max(input.min_quantity ?? 1, 1);
+  const quantityLine =
+    maxQty > 1 ? `Quantity: ${minQty} (max ${maxQty})\n` : "";
+
+  const total = computeDefaultTotal(input);
+  const totalLine =
+    total !== null && (input.product_variants || maxQty > 1)
+      ? `\nTotal: $${total.toFixed(2)}\n`
       : "";
 
   // Product preview rendered as markdown image + bold name + description.
@@ -403,6 +552,9 @@ function formatConsentPromptMarkdown(params: {
     reasonLine +
     `Context: ${input.context}\n` +
     amountLine +
+    variantsBlock +
+    quantityLine +
+    totalLine +
     `\n` +
     `Options:\n` +
     optionLines +
@@ -451,6 +603,12 @@ function buildConsentJson(params: {
     product_name: input.product_name ?? null,
     product_image_url: input.product_image_url ?? null,
     product_description: input.product_description ?? null,
+    product_variants: input.product_variants ?? null,
+    min_quantity: input.min_quantity ?? 1,
+    max_quantity: input.max_quantity ?? 1,
+    base_price_usd:
+      input.base_price_usd ??
+      (input.amount_usd !== undefined ? input.amount_usd : null),
   };
 }
 

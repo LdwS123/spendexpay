@@ -649,6 +649,42 @@ export async function getManagedAccount(
 }
 
 /**
+ * Fetch the most recent managed_accounts row for (user, service).
+ *
+ * Returns null when the user has no managed account for that service. Used by
+ * merchant-specific checkout helpers (e.g. `prepare_amazon_checkout`) that
+ * need to surface the Spendex-managed login credentials so the agent can sign
+ * in to the merchant's site before driving Computer Use. The decryption of
+ * `password_encrypted` is the caller's responsibility — this helper only
+ * returns the encrypted blob.
+ */
+export async function getManagedAccountByService(
+  userId: string,
+  service: string
+): Promise<ManagedAccountRecord | null> {
+  const { data, error } = await supabase
+    .from("managed_accounts")
+    .select("id, user_id, service, email_alias, password_encrypted, status, external_account_id, created_at")
+    .eq("user_id", userId)
+    .eq("service", service)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    if (error.code !== "PGRST116") {
+      console.error(
+        `[db] getManagedAccountByService: unexpected error (code: ${error.code}): ${error.message}. ` +
+        `user=${userId} service=${service}`
+      );
+    }
+    return null;
+  }
+  if (!data) return null;
+  return data as ManagedAccountRecord;
+}
+
+/**
  * Update a managed account's status (and optionally store the external ID
  * the merchant assigned to the new account).
  *
@@ -991,6 +1027,194 @@ export async function cacheProductPreview(
     console.error(
       `[db] cacheProductPreview: failed to insert for url="${params.url}" ` +
       `source=${params.source}: ${error.message} (code: ${error.code}).`
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Product variants cache
+//
+// `get_product_variants` writes one row per successful parse — either the
+// server-side JSON-LD scrape worked, or the host agent's browser tool
+// extracted the variant tree after we returned a SCRAPING BLOCKED
+// instruction. Either way the row is reused for 7 days. See
+// migrations/014_product_variants_cache.sql for the schema.
+//
+// The TypeScript shape of `variants` is a discriminated array of axis
+// options — color/size/storage/etc. — each carrying an optional price
+// delta and image URL. We persist the array as JSONB rather than
+// normalising into a child table because the shape is genuinely
+// heterogeneous across merchants and a join would add cost without
+// adding safety.
+// ---------------------------------------------------------------------------
+
+export type ProductVariantsSource = "server_fetch" | "agent_extracted";
+
+/**
+ * One selectable option on a single variant axis. `axis` is the human
+ * label of the axis ("color", "size", "storage"); `name` is the
+ * display name of this option ("Midnight Blue"); `value` is the
+ * machine-friendly identifier the merchant uses internally ("blue-256gb").
+ *
+ * `price_delta_usd` is the increment in USD that picking this option
+ * adds on top of `base_price_usd`. 0 (or undefined) means the option
+ * doesn't change the price.
+ */
+export interface ProductVariantOption {
+  axis: string;
+  name: string;
+  value: string;
+  price_delta_usd?: number;
+  available: boolean;
+  image_url?: string;
+}
+
+export interface ProductVariantsRow {
+  url: string;
+  variants: ProductVariantOption[];
+  base_price_usd: number | null;
+  currency: string | null;
+  min_quantity: number;
+  max_quantity: number;
+  source: ProductVariantsSource;
+  created_at: string;
+  ttl_expires_at: string;
+}
+
+interface RawProductVariantsRow {
+  url: string;
+  variants: unknown;
+  base_price_usd: number | string | null;
+  currency: string | null;
+  min_quantity: number | null;
+  max_quantity: number | null;
+  source: ProductVariantsSource;
+  created_at: string;
+  ttl_expires_at: string;
+}
+
+/**
+ * Validate an unknown value (typically a JSONB column straight from
+ * Postgres) into a typed `ProductVariantOption[]`. We don't trust the
+ * DB blindly — a row written by an older code path could carry an
+ * unexpected shape, and the row format is part of the public agent
+ * contract, so we'd rather drop a malformed entry than silently surface
+ * it. Returns an empty array when the input is not an array.
+ */
+function coerceVariantOptions(value: unknown): ProductVariantOption[] {
+  if (!Array.isArray(value)) return [];
+  const out: ProductVariantOption[] = [];
+  for (const raw of value) {
+    if (raw === null || typeof raw !== "object") continue;
+    const rec = raw as Record<string, unknown>;
+    const axis = typeof rec.axis === "string" ? rec.axis : null;
+    const name = typeof rec.name === "string" ? rec.name : null;
+    const variantValue = typeof rec.value === "string" ? rec.value : null;
+    const available = typeof rec.available === "boolean" ? rec.available : true;
+    if (!axis || !name || !variantValue) continue;
+    const option: ProductVariantOption = {
+      axis,
+      name,
+      value: variantValue,
+      available,
+    };
+    if (typeof rec.price_delta_usd === "number" && Number.isFinite(rec.price_delta_usd)) {
+      option.price_delta_usd = rec.price_delta_usd;
+    }
+    if (typeof rec.image_url === "string" && rec.image_url.length > 0) {
+      option.image_url = rec.image_url;
+    }
+    out.push(option);
+  }
+  return out;
+}
+
+/**
+ * Look up the freshest non-expired cached variants row for a URL. Same
+ * design as `getCachedProductPreview` — filter on `ttl_expires_at >
+ * now()` so the index sweep skips stale rows, and return null when
+ * nothing matches.
+ */
+export async function getCachedVariants(
+  url: string
+): Promise<ProductVariantsRow | null> {
+  const urlHash = hashUrl(url);
+  const nowIso = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("product_variants")
+    .select(
+      "url, variants, base_price_usd, currency, min_quantity, max_quantity, " +
+      "source, created_at, ttl_expires_at"
+    )
+    .eq("url_hash", urlHash)
+    .gt("ttl_expires_at", nowIso)
+    .order("ttl_expires_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    if (error.code !== "PGRST116") {
+      console.error(
+        `[db] getCachedVariants: unexpected error (code: ${error.code}): ` +
+        `${error.message}. url_hash=${urlHash}`
+      );
+    }
+    return null;
+  }
+
+  if (!data) return null;
+
+  const row = data as unknown as RawProductVariantsRow;
+  return {
+    url: row.url,
+    variants: coerceVariantOptions(row.variants),
+    base_price_usd:
+      row.base_price_usd === null ? null : Number(row.base_price_usd),
+    currency: row.currency,
+    min_quantity: row.min_quantity ?? 1,
+    max_quantity: row.max_quantity ?? 99,
+    source: row.source,
+    created_at: row.created_at,
+    ttl_expires_at: row.ttl_expires_at,
+  };
+}
+
+interface CacheVariantsParams {
+  url: string;
+  variants: ProductVariantOption[];
+  basePriceUsd: number | null;
+  currency: string | null;
+  minQuantity: number;
+  maxQuantity: number;
+}
+
+/**
+ * Insert one row into product_variants. Best-effort: a failure here
+ * does not invalidate the variant data we already extracted, so we log
+ * and return rather than throw. The next call for the same URL will
+ * miss the cache and re-parse.
+ */
+export async function cacheVariants(
+  params: CacheVariantsParams,
+  source: ProductVariantsSource
+): Promise<void> {
+  const urlHash = hashUrl(params.url);
+  const { error } = await supabase.from("product_variants").insert({
+    url: params.url,
+    url_hash: urlHash,
+    variants: params.variants,
+    base_price_usd: params.basePriceUsd,
+    currency: params.currency,
+    min_quantity: params.minQuantity,
+    max_quantity: params.maxQuantity,
+    source,
+  });
+
+  if (error) {
+    console.error(
+      `[db] cacheVariants: failed to insert for url="${params.url}" ` +
+      `source=${source}: ${error.message} (code: ${error.code}).`
     );
   }
 }

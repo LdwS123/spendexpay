@@ -158,6 +158,135 @@
     margin-right: 4px;
     vertical-align: top;
   }
+  .variants {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    margin: 4px 0 16px;
+  }
+  .variants.show { display: flex; }
+  .variant-axis {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .variant-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 0;
+  }
+  .variant-title .selected {
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--ink);
+    margin-left: 6px;
+    font-weight: 600;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--ink);
+    border-radius: 999px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 120ms ease, background 120ms ease, opacity 120ms ease;
+    user-select: none;
+  }
+  .chip:hover:not(.disabled) {
+    border-color: var(--accent);
+  }
+  .chip.selected {
+    border: 2px solid var(--accent);
+    background: rgba(0, 229, 180, 0.1);
+    padding: 5px 11px; /* compensate for thicker border */
+  }
+  .chip.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    text-decoration: line-through;
+  }
+  .swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+  }
+  .chip-delta {
+    margin-left: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  .chip.selected .chip-delta { color: var(--accent); }
+  .qty {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 16px;
+  }
+  .qty.show { display: flex; }
+  .qty-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .qty-controls {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-elevated);
+  }
+  .qty-btn {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    color: var(--ink);
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 0;
+  }
+  .qty-btn:hover:not(:disabled) { background: var(--accent-dim); color: var(--accent); }
+  .qty-input {
+    width: 44px;
+    text-align: center;
+    background: transparent;
+    color: var(--ink);
+    border: none;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    font-family: inherit;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    height: 32px;
+    -moz-appearance: textfield;
+  }
+  .qty-input::-webkit-outer-spin-button,
+  .qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .qty-input:focus { outline: none; }
   .rules {
     border-top: 1px solid var(--border);
     margin-top: 16px;
@@ -262,6 +391,15 @@
         <a class="product-link" id="productLink" href="#" target="_blank" rel="noopener"></a>
       </div>
     </div>
+    <div class="variants" id="variants"></div>
+    <div class="qty" id="qtyBlock">
+      <span class="qty-label">Quantity</span>
+      <div class="qty-controls">
+        <button class="qty-btn" id="qtyMinus" type="button" aria-label="Decrease quantity">&minus;</button>
+        <input class="qty-input" id="qtyInput" type="number" min="1" value="1" />
+        <button class="qty-btn" id="qtyPlus" type="button" aria-label="Increase quantity">+</button>
+      </div>
+    </div>
     <div class="amount">
       <span class="currency" id="amountCurrency">USD</span><span id="amountValue">--</span>
     </div>
@@ -298,6 +436,19 @@ const { App } = globalThis.ExtApps;
   const declineBtn = el("declineBtn");
 
   let payload = null;
+  // Shopping state — mutated by the chip/quantity handlers, sent back to the
+  // server inside decision_metadata when the user submits.
+  const shopping = {
+    // axis -> selected option value
+    selected: {},
+    quantity: 1,
+    basePrice: null,
+    // Cache of axis -> option lookup for quick total recompute.
+    axisOptions: {},
+    // The original product image url, so we can restore it when the user
+    // picks a variant without its own image_url.
+    defaultImageUrl: null,
+  };
 
   function fmtAmount(amount, currency) {
     const c = (currency || "USD").toUpperCase();
@@ -311,6 +462,188 @@ const { App } = globalThis.ExtApps;
     const v = Number(n);
     if (!Number.isFinite(v)) return "--";
     return "$" + v.toFixed(2);
+  }
+
+  // Compute the current total: (base + sum of selected price deltas) * qty.
+  // Returns null if no base price was supplied (signup flow, etc).
+  function computeTotal() {
+    if (shopping.basePrice === null || !Number.isFinite(shopping.basePrice)) {
+      return null;
+    }
+    let unit = shopping.basePrice;
+    for (const axis of Object.keys(shopping.selected)) {
+      const opt = (shopping.axisOptions[axis] || []).find(
+        (o) => o.value === shopping.selected[axis]
+      );
+      if (opt && typeof opt.price_delta_usd === "number" && Number.isFinite(opt.price_delta_usd)) {
+        unit += opt.price_delta_usd;
+      }
+    }
+    return unit * Math.max(1, shopping.quantity);
+  }
+
+  function refreshTotal() {
+    const total = computeTotal();
+    const currency = (payload && payload.currency) || "USD";
+    const a = fmtAmount(total === null ? NaN : total, currency);
+    el("amountCurrency").textContent = a.currency;
+    el("amountValue").textContent = a.value;
+  }
+
+  // Swap the main product image when a selected variant carries its own
+  // image_url. Falls back to the default product image when the new
+  // selection doesn't override.
+  function refreshProductImage() {
+    const imgEl = document.querySelector(".product-img");
+    if (!imgEl) return;
+    let nextUrl = shopping.defaultImageUrl;
+    for (const axis of Object.keys(shopping.selected)) {
+      const opt = (shopping.axisOptions[axis] || []).find(
+        (o) => o.value === shopping.selected[axis]
+      );
+      if (opt && opt.image_url) {
+        nextUrl = opt.image_url;
+      }
+    }
+    if (nextUrl && imgEl.tagName === "IMG" && imgEl.src !== nextUrl) {
+      imgEl.src = nextUrl;
+    }
+  }
+
+  function renderVariants(variants) {
+    const root = el("variants");
+    root.innerHTML = "";
+    if (!variants || variants.length === 0) {
+      root.classList.remove("show");
+      return;
+    }
+    root.classList.add("show");
+
+    for (const variant of variants) {
+      const axis = String(variant.axis || "");
+      const options = Array.isArray(variant.options) ? variant.options : [];
+      if (!axis || options.length === 0) continue;
+
+      shopping.axisOptions[axis] = options;
+
+      // Pre-select default_value, else first available option, else first.
+      let initial =
+        options.find((o) => o.value === variant.default_value) ||
+        options.find((o) => o.available !== false) ||
+        options[0];
+      shopping.selected[axis] = initial.value;
+
+      const wrap = document.createElement("div");
+      wrap.className = "variant-axis";
+
+      const title = document.createElement("p");
+      title.className = "variant-title";
+      title.textContent = axis.charAt(0).toUpperCase() + axis.slice(1);
+      const selSpan = document.createElement("span");
+      selSpan.className = "selected";
+      selSpan.textContent = initial.name;
+      title.appendChild(selSpan);
+      wrap.appendChild(title);
+
+      const chips = document.createElement("div");
+      chips.className = "chips";
+
+      for (const opt of options) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "chip";
+        chip.dataset.axis = axis;
+        chip.dataset.value = opt.value;
+        if (opt.value === initial.value) chip.classList.add("selected");
+        if (opt.available === false) chip.classList.add("disabled");
+
+        // Color/material swatch — rendered for axes that look visual.
+        const isVisual =
+          /color|colour|finish|material/i.test(axis) || Boolean(opt.image_url);
+        if (isVisual) {
+          const sw = document.createElement("span");
+          sw.className = "swatch";
+          if (opt.image_url) {
+            sw.style.backgroundImage = `url("${opt.image_url}")`;
+          } else {
+            // Best-effort: treat the value as a CSS color (works for
+            // "blue", "#003366", etc). Falls back to a neutral block.
+            sw.style.background = opt.value;
+          }
+          chip.appendChild(sw);
+        }
+
+        const label = document.createElement("span");
+        label.textContent = opt.name;
+        chip.appendChild(label);
+
+        if (typeof opt.price_delta_usd === "number" && opt.price_delta_usd !== 0) {
+          const d = document.createElement("span");
+          d.className = "chip-delta";
+          const sign = opt.price_delta_usd > 0 ? "+" : "-";
+          d.textContent = `${sign}$${Math.abs(opt.price_delta_usd).toFixed(2)}`;
+          chip.appendChild(d);
+        }
+
+        chip.addEventListener("click", () => {
+          if (opt.available === false) return;
+          shopping.selected[axis] = opt.value;
+          // Update selected class on siblings.
+          for (const sibling of chips.querySelectorAll(".chip")) {
+            sibling.classList.toggle(
+              "selected",
+              sibling.dataset.value === opt.value
+            );
+          }
+          selSpan.textContent = opt.name;
+          refreshTotal();
+          refreshProductImage();
+        });
+
+        chips.appendChild(chip);
+      }
+      wrap.appendChild(chips);
+      root.appendChild(wrap);
+    }
+  }
+
+  function renderQuantity(min, max) {
+    const minQty = Math.max(1, Number.isFinite(min) ? min : 1);
+    const maxQty = Math.max(minQty, Number.isFinite(max) ? max : 1);
+    shopping.quantity = minQty;
+
+    const block = el("qtyBlock");
+    const input = el("qtyInput");
+    const minus = el("qtyMinus");
+    const plus = el("qtyPlus");
+
+    if (maxQty <= 1) {
+      block.classList.remove("show");
+      input.value = "1";
+      return;
+    }
+    block.classList.add("show");
+    input.min = String(minQty);
+    input.max = String(maxQty);
+    input.value = String(minQty);
+    minus.disabled = shopping.quantity <= minQty;
+    plus.disabled = shopping.quantity >= maxQty;
+
+    function setQty(next) {
+      const clamped = Math.min(maxQty, Math.max(minQty, Math.floor(next)));
+      shopping.quantity = clamped;
+      input.value = String(clamped);
+      minus.disabled = clamped <= minQty;
+      plus.disabled = clamped >= maxQty;
+      refreshTotal();
+    }
+
+    minus.onclick = () => setQty(shopping.quantity - 1);
+    plus.onclick = () => setQty(shopping.quantity + 1);
+    input.oninput = () => {
+      const n = parseInt(input.value, 10);
+      if (Number.isFinite(n)) setQty(n);
+    };
   }
 
   function render(data) {
@@ -345,6 +678,7 @@ const { App } = globalThis.ExtApps;
       }
       const imgWrap = el("productImgWrap");
       if (data.product_image_url) {
+        shopping.defaultImageUrl = data.product_image_url;
         imgWrap.textContent = "";
         imgWrap.classList.remove("product-img-fallback");
         const img = document.createElement("img");
@@ -359,9 +693,33 @@ const { App } = globalThis.ExtApps;
       }
     }
 
-    const a = fmtAmount(data.amount, data.currency);
-    el("amountCurrency").textContent = a.currency;
-    el("amountValue").textContent = a.value;
+    // Initial base price for live total computation. Falls back to `amount`
+    // when the agent didn't provide an explicit per-unit base price.
+    const basePriceCandidate =
+      typeof data.base_price_usd === "number"
+        ? data.base_price_usd
+        : typeof data.amount === "number"
+        ? data.amount
+        : null;
+    shopping.basePrice = Number.isFinite(basePriceCandidate)
+      ? basePriceCandidate
+      : null;
+
+    // Variants block + quantity picker — rendered before refreshTotal so
+    // selected deltas land in the initial total.
+    renderVariants(data.product_variants || []);
+    renderQuantity(data.min_quantity || 1, data.max_quantity || 1);
+
+    // Initial total: prefer the live computation when we have a base price
+    // and selections are in place; otherwise fall through to the static
+    // `amount` value the legacy contract relied on.
+    if (shopping.basePrice !== null) {
+      refreshTotal();
+    } else {
+      const a = fmtAmount(data.amount, data.currency);
+      el("amountCurrency").textContent = a.currency;
+      el("amountValue").textContent = a.value;
+    }
 
     const monthlySpent = Number(data.monthly_spent);
     const monthlyCap = Number(data.monthly_cap);
@@ -405,6 +763,21 @@ const { App } = globalThis.ExtApps;
     statusEl.textContent = "Recording your choice...";
     statusEl.className = "status";
 
+    // Capture the shopping state in decision_metadata. The server treats
+    // this column as a free-form JSONB blob, so adding variant/quantity
+    // fields is backward compatible with existing rows.
+    const metadata = { source: "consent_widget" };
+    if (Object.keys(shopping.selected).length > 0) {
+      metadata.variants_chosen = { ...shopping.selected };
+    }
+    if (shopping.quantity && shopping.quantity !== 1) {
+      metadata.quantity = shopping.quantity;
+    }
+    const total = computeTotal();
+    if (total !== null) {
+      metadata.computed_total_usd = Number(total.toFixed(2));
+    }
+
     try {
       await app.callServerTool({
         name: "submit_consent_decision",
@@ -412,7 +785,7 @@ const { App } = globalThis.ExtApps;
           consent_id: payload.consent_id,
           decision,
           mcp_token: payload.mcp_token,
-          decision_metadata: { source: "consent_widget" },
+          decision_metadata: metadata,
         },
       });
     } catch (err) {
