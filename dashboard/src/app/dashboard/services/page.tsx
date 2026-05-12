@@ -36,11 +36,15 @@ export default async function ServicesPage() {
 
     // 1) Virtual card summary — we only need brand + last4 server-side.
     //    The PAN is fetched on demand via /api/services/card-details.
+    // We deliberately do NOT filter by status here — a frozen ('inactive')
+    // card must still render so the user can see the frozen state and
+    // unfreeze it. 'canceled' cards are excluded because they are
+    // unrecoverable.
     const { data: cardRow, error: cardError } = await admin
       .from("virtual_cards")
       .select("stripe_card_id")
       .eq("user_id", user.id)
-      .eq("status", "active")
+      .neq("status", "canceled")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -61,6 +65,7 @@ export default async function ServicesPage() {
         card = {
           last4: stripeCard.last4,
           brand: stripeCard.brand,
+          status: stripeCard.status === "active" ? "active" : "inactive",
         };
       } catch (err) {
         console.error(
@@ -68,7 +73,7 @@ export default async function ServicesPage() {
           err
         );
         // Even without Stripe metadata we want to render the card shell.
-        card = { last4: "••••", brand: "Visa" };
+        card = { last4: "••••", brand: "Visa", status: "active" };
       }
     }
 

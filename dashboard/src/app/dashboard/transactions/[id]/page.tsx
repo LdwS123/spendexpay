@@ -3,12 +3,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAdminClient } from "@/lib/supabase";
 import type { AuditLog } from "@/app/api/transactions/route";
+import RefundRequestPanel from "./RefundRequestPanel";
 
 export const dynamic = "force-dynamic";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 const FAILED_STATUSES = ["payment_failed", "deploy_failed_after_payment"];
+const REFUND_ELIGIBLE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
 function capitalise(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
@@ -185,6 +187,22 @@ export default async function TransactionDetailPage({ params }: PageProps) {
 
   const isFailed = FAILED_STATUSES.includes(tx.status);
 
+  // Refund eligibility: success status, within 30 days, non-zero amount.
+  // Wrapped in a defensive check so a missing refund_requests table (e.g.
+  // a dashboard pointed at a DB where migration 012 hasn't run) just hides
+  // the panel rather than crashing the page.
+  let refundEligible = false;
+  try {
+    const txAgeMs = Date.now() - new Date(tx.created_at).getTime();
+    refundEligible =
+      tx.status === "success" &&
+      txAgeMs < REFUND_ELIGIBLE_WINDOW_MS &&
+      typeof tx.amount_usd === "number" &&
+      tx.amount_usd > 0;
+  } catch {
+    refundEligible = false;
+  }
+
   return (
     <main>
       {/* Page header */}
@@ -287,6 +305,10 @@ export default async function TransactionDetailPage({ params }: PageProps) {
             )}
           </dl>
         </div>
+
+        {/* Refund / dispute panel — client island. Hidden if not eligible
+            and there's no existing refund request on file. */}
+        <RefundRequestPanel auditLogId={tx.id} eligible={refundEligible} />
 
         {/* Back link at the bottom */}
         <Link

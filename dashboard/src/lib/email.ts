@@ -273,10 +273,6 @@ export async function sendChargeNotification(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Consent request notification
-// ---------------------------------------------------------------------------
-
 /**
  * Build the HMAC-SHA256 token that signs a consent-decision link.
  *
@@ -329,6 +325,211 @@ export function verifyConsentDecisionToken(
   }
   return mismatch === 0;
 }
+
+// ---------------------------------------------------------------------------
+// Weekly digest
+// ---------------------------------------------------------------------------
+
+interface DigestServiceLine {
+  service: string;
+  total_spent_usd: number;
+  transaction_count: number;
+}
+
+interface DigestTransactionLine {
+  id: string;
+  created_at: string;
+  service: string;
+  amount_usd: number;
+  description: string | null;
+}
+
+interface WeeklyDigestParams {
+  to: string;
+  displayName?: string;
+  weekStart: string; // ISO
+  weekEnd: string; // ISO
+  totalSpentUsd: number;
+  transactionCount: number;
+  declinedCount: number;
+  successRatePct: number;
+  largestCharge: {
+    service: string;
+    amount_usd: number;
+  } | null;
+  topServices: DigestServiceLine[];
+  recentTransactions: DigestTransactionLine[];
+  vsLastWeek: {
+    spent_diff_pct: number | null;
+    count_diff_pct: number | null;
+  };
+}
+
+function formatDateShort(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function formatDiffBadge(diff: number | null): string {
+  if (diff === null) {
+    return `<span style="color:#64748b;font-size:11px;">no data last week</span>`;
+  }
+  const rounded = Math.round(diff * 10) / 10;
+  const sign = rounded > 0 ? "+" : "";
+  const color =
+    rounded > 0 ? "#dc2626" : rounded < 0 ? "#059669" : "#64748b";
+  return `<span style="color:${color};font-size:11px;font-weight:600;">${sign}${rounded}% vs last week</span>`;
+}
+
+export async function sendWeeklyDigest(
+  params: WeeklyDigestParams
+): Promise<{ ok: boolean; reason?: string }> {
+  const client = getResend();
+  if (!client) {
+    console.error(
+      `[email] Resend not configured — skipping weekly digest to ${params.to}.`
+    );
+    return { ok: false, reason: "resend-not-configured" };
+  }
+
+  const safeName = escapeHtml((params.displayName ?? "").trim() || "there");
+  const total = formatAmountEur(params.totalSpentUsd);
+  const dashboardBase =
+    process.env.SPENDEX_DASHBOARD_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    APP_URL;
+  const baseUrl = dashboardBase.replace(/\/+$/, "");
+  const unsubscribeUrl = `${baseUrl}/dashboard/settings?unsubscribe=weekly_digest`;
+
+  const weekLabel = `${formatDateShort(params.weekStart)} – ${formatDateShort(
+    params.weekEnd
+  )}`;
+  const safeWeek = escapeHtml(weekLabel);
+
+  const statsRow = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">
+      <tr>
+        <td width="33%" style="padding:12px;background:${BG_NAVY};border-radius:10px;text-align:center;color:#ffffff;">
+          <div style="font-size:11px;color:${ACCENT_TEAL};text-transform:uppercase;letter-spacing:0.6px;">Spent</div>
+          <div style="font-size:22px;font-weight:700;margin:4px 0;">$${escapeHtml(total)}</div>
+          <div>${formatDiffBadge(params.vsLastWeek.spent_diff_pct)}</div>
+        </td>
+        <td width="6"></td>
+        <td width="33%" style="padding:12px;background:#f1f5f9;border-radius:10px;text-align:center;">
+          <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:0.6px;">Transactions</div>
+          <div style="font-size:22px;font-weight:700;margin:4px 0;color:${BG_NAVY};">${params.transactionCount}</div>
+          <div>${formatDiffBadge(params.vsLastWeek.count_diff_pct)}</div>
+        </td>
+        <td width="6"></td>
+        <td width="33%" style="padding:12px;background:#f1f5f9;border-radius:10px;text-align:center;">
+          <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:0.6px;">Success rate</div>
+          <div style="font-size:22px;font-weight:700;margin:4px 0;color:${BG_NAVY};">${escapeHtml(params.successRatePct.toFixed(1))}%</div>
+          <div style="color:#64748b;font-size:11px;">${params.declinedCount} declined</div>
+        </td>
+      </tr>
+    </table>`;
+
+  const largestBlock = params.largestCharge
+    ? `<p style="margin:0 0 14px;color:#475569;font-size:13px;">
+        Largest charge: <strong style="color:${BG_NAVY};">$${escapeHtml(formatAmountEur(params.largestCharge.amount_usd))}</strong>
+        on ${escapeHtml(params.largestCharge.service)}.
+      </p>`
+    : "";
+
+  const topServicesHtml =
+    params.topServices.length === 0
+      ? `<p style="margin:0;color:#64748b;font-size:13px;">No spend this week.</p>`
+      : params.topServices
+          .map((s, i) => {
+            const safeSvc = escapeHtml(s.service);
+            const safeAmt = escapeHtml(formatAmountEur(s.total_spent_usd));
+            return `<tr>
+              <td style="padding:8px 0;color:${BG_NAVY};font-weight:600;width:24px;">${i + 1}.</td>
+              <td style="padding:8px 0;color:${BG_NAVY};text-transform:capitalize;">${safeSvc}</td>
+              <td style="padding:8px 0;text-align:right;color:#475569;">${s.transaction_count} tx</td>
+              <td style="padding:8px 0;text-align:right;font-weight:600;color:${BG_NAVY};">$${safeAmt}</td>
+            </tr>`;
+          })
+          .join("\n");
+
+  const recentHtml =
+    params.recentTransactions.length === 0
+      ? `<p style="margin:0;color:#64748b;font-size:13px;">No recent transactions.</p>`
+      : params.recentTransactions
+          .map((t) => {
+            const safeSvc = escapeHtml(t.service);
+            const safeAmt = escapeHtml(formatAmountEur(t.amount_usd));
+            const safeDate = escapeHtml(formatDateShort(t.created_at));
+            const desc =
+              t.description && t.description.length > 0
+                ? escapeHtml(t.description.slice(0, 60))
+                : "";
+            return `<tr>
+              <td style="padding:8px 0;color:#475569;font-size:12px;width:64px;">${safeDate}</td>
+              <td style="padding:8px 0;color:${BG_NAVY};text-transform:capitalize;font-size:13px;">${safeSvc}${desc ? ` <span style="color:#94a3b8;">· ${desc}</span>` : ""}</td>
+              <td style="padding:8px 0;text-align:right;font-weight:600;color:${BG_NAVY};font-size:13px;">$${safeAmt}</td>
+            </tr>`;
+          })
+          .join("\n");
+
+  const body = `
+    <h1 style="margin:0 0 6px;font-size:22px;font-weight:700;color:${BG_NAVY};">Your week, ${safeName}</h1>
+    <p style="margin:0 0 16px;color:#475569;font-size:13px;">${safeWeek} — here is what your agents shipped.</p>
+    ${statsRow}
+    ${largestBlock}
+    <h2 style="margin:24px 0 8px;font-size:14px;font-weight:600;color:${BG_NAVY};text-transform:uppercase;letter-spacing:0.5px;">Top services</h2>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;margin:0 0 24px;">
+      ${topServicesHtml}
+    </table>
+    <h2 style="margin:24px 0 8px;font-size:14px;font-weight:600;color:${BG_NAVY};text-transform:uppercase;letter-spacing:0.5px;">Recent transactions</h2>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">
+      ${recentHtml}
+    </table>
+    ${primaryButton(`${baseUrl}/dashboard`, "View full dashboard →")}
+    <p style="margin:24px 0 0;color:#94a3b8;font-size:11px;">
+      You are receiving this because weekly digests are enabled.
+      <a href="${unsubscribeUrl}" style="color:#94a3b8;text-decoration:underline;">Unsubscribe</a>.
+    </p>
+  `;
+
+  const html = wrapEmail({
+    preheader: `This week: $${total} across ${params.transactionCount} transactions.`,
+    bodyHtml: body,
+  });
+
+  try {
+    const { error } = await client.emails.send({
+      from: getFromAddress(),
+      to: params.to,
+      subject: `Spendex weekly digest — $${total} this week`,
+      html,
+    });
+    if (error) {
+      console.error(
+        `[email] Resend returned error for weekly digest to ${params.to}:`,
+        error
+      );
+      return { ok: false, reason: error.message ?? "resend-error" };
+    }
+    console.error(`[email] Weekly digest sent to ${params.to}.`);
+    return { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[email] Failed to send weekly digest to ${params.to}: ${message}`
+    );
+    return { ok: false, reason: message };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Consent request notification
+// ---------------------------------------------------------------------------
 
 interface ConsentEmailParams {
   to: string;

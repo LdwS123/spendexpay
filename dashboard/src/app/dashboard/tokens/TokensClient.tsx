@@ -68,11 +68,17 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
 
   return (
     <main>
-      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-[#0a1220]">MCP tokens</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Paste a token into your agent config to authorize payments.
+      <header className="border-b border-slate-200/70 bg-white/90 px-4 py-4 backdrop-blur sm:px-8">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Access
+            </p>
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+              MCP tokens
+            </h1>
+            <p className="mt-1 text-xs text-slate-500">
+              Issue or rotate the credential your agent uses to call Spendex.
           </p>
         </div>
         {!hasToken && (
@@ -80,14 +86,15 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
             type="button"
             onClick={generate}
             disabled={loading}
-            className="bg-[#070d18] hover:bg-[#0f1c30] disabled:opacity-50 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
+              className="rounded-lg bg-[#070d18] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f1c30] disabled:opacity-50"
           >
-            {loading ? "Generating…" : "Generate token"}
+              {loading ? "Generating..." : "Generate token"}
           </button>
         )}
+        </div>
       </header>
 
-      <div className="px-4 sm:px-8 py-7 max-w-3xl space-y-4">
+      <div className="max-w-3xl space-y-4 px-4 py-7 sm:px-8">
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
             <p className="text-sm text-red-600">{error}</p>
@@ -96,7 +103,7 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
 
         {/* One-time token reveal banner */}
         {newToken && (
-          <div className="bg-[#00e5b4]/8 border border-[#00e5b4]/30 rounded-xl p-4">
+          <div className="rounded-xl border border-[#00e5b4]/30 bg-[#00e5b4]/8 p-4">
             <p className="text-xs font-medium text-[#00a882] mb-2">
               New token — copy it now, it won&apos;t be shown again
             </p>
@@ -107,7 +114,8 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
               <button
                 type="button"
                 onClick={() => copy(newToken)}
-                className="text-xs font-medium text-[#00e5b4] hover:text-[#00c49a] shrink-0 transition-colors"
+                aria-label={copied ? "Token copied to clipboard" : "Copy MCP token"}
+                className="text-xs font-semibold text-[#00876a] hover:text-[#00a882] shrink-0 transition-colors px-2 py-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]"
               >
                 {copied ? "Copied!" : "Copy"}
               </button>
@@ -115,11 +123,11 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
           </div>
         )}
 
-        {/* Token status card */}
+        {/* Token status */}
         {!hasToken ? (
-          <div className="bg-white rounded-xl border border-slate-100">
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-4">
+          <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white">
+            <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-slate-50">
                 <svg
                   className="w-5 h-5 text-slate-300"
                   fill="none"
@@ -134,14 +142,14 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
                   />
                 </svg>
               </div>
-              <p className="text-sm font-medium text-slate-600">No token</p>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-sm font-medium text-slate-700">No active token</p>
+              <p className="mt-1 text-xs text-slate-500">
                 Generate a token and add it to your agent&apos;s MCP config.
               </p>
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-100 divide-y divide-slate-50">
+          <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white">
             <div className="flex items-center gap-4 px-5 py-4">
               <div className="flex-1 min-w-0">
                 <code className="text-sm font-mono text-slate-700">
@@ -153,20 +161,20 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={generate}
                   disabled={loading}
-                  className="text-xs text-slate-400 hover:text-slate-600 font-medium transition-colors disabled:opacity-50"
+                  className="text-xs text-slate-500 hover:text-slate-700 font-medium transition-colors disabled:opacity-50 px-2 py-2 min-h-[44px] sm:min-h-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]"
                 >
-                  {loading ? "Working…" : "Rotate"}
+                  {loading ? "Working..." : "Rotate"}
                 </button>
                 <button
                   type="button"
                   onClick={revoke}
                   disabled={loading}
-                  className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors disabled:opacity-50"
+                  className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors disabled:opacity-50 px-2 py-2 min-h-[44px] sm:min-h-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                 >
                   Revoke
                 </button>
@@ -176,12 +184,12 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
         )}
 
         {/* Usage snippet */}
-        <div className="bg-[#070d18] rounded-xl p-5">
-          <p className="text-[11px] font-semibold text-[#00e5b4] tracking-widest uppercase mb-3">
-            Usage
+        <div className="rounded-xl bg-[#070d18] p-5">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[#00e5b4]">
+            Cursor / Claude config
           </p>
           <pre className="text-[10px] text-white/40 font-mono leading-relaxed whitespace-pre">
-            {`// .claude/settings.json\n{\n  "mcpServers": {\n    "spendexpay": {\n      "command": "npx",\n      "args": ["-y", "@spendexpay/mcp"],\n      "env": { "SPENDEX_TOKEN": "spx_..." }\n    }\n  }\n}`}
+            {`// .mcp.json\n{\n  "mcpServers": {\n    "spendex": {\n      "command": "npx",\n      "args": ["-y", "@spendexai/mcp"],\n      "env": { "SPENDEX_TOKEN": "spx_..." }\n    }\n  }\n}`}
           </pre>
         </div>
       </div>

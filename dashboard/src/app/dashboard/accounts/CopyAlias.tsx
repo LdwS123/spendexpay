@@ -39,7 +39,8 @@ export default function CopyAlias({ alias }: Props) {
       <button
         type="button"
         onClick={copy}
-        className="text-[11px] font-semibold text-slate-700 hover:text-[#0a1220] border border-slate-200 hover:border-slate-300 bg-white rounded-md px-2 py-1.5 transition-colors shrink-0"
+        aria-label={copied ? `${alias} copied to clipboard` : `Copy alias ${alias}`}
+        className="text-[11px] font-semibold text-slate-700 hover:text-[#0a1220] border border-slate-200 hover:border-slate-300 bg-white rounded-md px-2.5 py-2 min-h-[44px] sm:min-h-0 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]"
       >
         {copied ? "Copied" : "Copy"}
       </button>

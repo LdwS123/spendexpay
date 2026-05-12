@@ -2,13 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { browserClient } from "@/lib/supabase";
+import TwoFactorSection from "./TwoFactorSection";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 type SaveState = "idle" | "saving" | "saved" | "error";
-type DeleteState = "idle" | "confirming" | "deleting" | "error";
+// Adds a "needs2fa" step: the server replied 409 2fa_required, so we
+// surface a code input to the user and re-submit with X-2FA-Code.
+type DeleteState =
+  | "idle"
+  | "confirming"
+  | "needs2fa"
+  | "deleting"
+  | "error";
 
 // ---------------------------------------------------------------------------
 // Page
@@ -25,6 +33,7 @@ export default function SettingsPage() {
   // ── Danger zone ─────────────────────────────────────────────────────────
   const [deleteState, setDeleteState] = useState<DeleteState>("idle");
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteTwoFactorCode, setDeleteTwoFactorCode] = useState("");
 
   // ── Seed fields from current session ────────────────────────────────────
   useEffect(() => {
@@ -83,13 +92,26 @@ export default function SettingsPage() {
   }
 
   // ── Delete account ───────────────────────────────────────────────────────
-  async function handleDeleteConfirm() {
+  async function handleDeleteConfirm(twoFactorCode?: string) {
     setDeleteState("deleting");
     setDeleteError(null);
 
     try {
-      const res = await fetch("/api/settings/account", { method: "DELETE" });
+      const headers: Record<string, string> = {};
+      if (twoFactorCode) headers["X-2FA-Code"] = twoFactorCode;
+      const res = await fetch("/api/settings/account", {
+        method: "DELETE",
+        headers,
+      });
       const json = (await res.json()) as { success?: boolean; error?: string };
+
+      // 409 with "2fa_required" — surface the code prompt and re-arm the
+      // delete flow once the user types their TOTP code.
+      if (res.status === 409 && json.error === "2fa_required") {
+        setDeleteState("needs2fa");
+        setDeleteError(null);
+        return;
+      }
 
       if (!res.ok || !json.success) {
         setDeleteState("error");
@@ -124,14 +146,19 @@ export default function SettingsPage() {
   return (
     <main>
       {/* ── Header ── */}
-      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4">
-        <h1 className="text-lg font-semibold text-[#0a1220]">Settings</h1>
-        <p className="text-xs text-slate-400 mt-0.5">
-          Manage your profile and account.
+      <header className="border-b border-slate-200/70 bg-white/90 px-4 py-4 backdrop-blur sm:px-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+          Access
+        </p>
+        <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+          Settings
+        </h1>
+        <p className="mt-1 text-xs text-slate-500">
+          Profile information, contact details, and account controls.
         </p>
       </header>
 
-      <div className="px-4 sm:px-8 py-7 max-w-2xl space-y-5">
+      <div className="max-w-3xl space-y-5 px-4 py-7 sm:px-8">
 
         {/* ── Section 1 — Profile ── */}
         <form onSubmit={handleSave}>
@@ -253,7 +280,7 @@ export default function SettingsPage() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={handleDeleteConfirm}
+                  onClick={() => handleDeleteConfirm()}
                   className="text-sm font-semibold text-white bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-colors"
                 >
                   Yes, delete my account
@@ -269,11 +296,58 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {/* 2FA challenge — surfaced when the API returned 409 2fa_required */}
+          {deleteState === "needs2fa" && (
+            <div className="rounded-lg border border-red-100 bg-red-50/60 p-4 space-y-3">
+              <p className="text-sm font-medium text-red-700">
+                Enter your 2FA code to confirm account deletion.
+              </p>
+              <input
+                type="text"
+                inputMode="text"
+                autoComplete="one-time-code"
+                value={deleteTwoFactorCode}
+                onChange={(e) => setDeleteTwoFactorCode(e.target.value)}
+                placeholder="123456 or recovery code"
+                className="w-full max-w-xs border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-red-300 focus:border-red-300"
+              />
+              {deleteError && (
+                <p className="text-xs text-red-600">{deleteError}</p>
+              )}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  disabled={deleteTwoFactorCode.length < 6}
+                  onClick={() => handleDeleteConfirm(deleteTwoFactorCode)}
+                  className="text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 px-4 py-2 rounded-lg transition-colors"
+                >
+                  Confirm delete
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteState("idle");
+                    setDeleteTwoFactorCode("");
+                  }}
+                  className="text-sm font-medium text-slate-600 hover:text-slate-800 px-4 py-2 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Deleting spinner */}
           {deleteState === "deleting" && (
             <p className="text-sm text-slate-500">Deleting your account…</p>
           )}
         </div>
+
+        {/* ── Divider ── */}
+        <div className="border-t border-slate-100" />
+
+        {/* ── Section 3 — Two-factor authentication ── */}
+        <TwoFactorSection />
 
       </div>
     </main>

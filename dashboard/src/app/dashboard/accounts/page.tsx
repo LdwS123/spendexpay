@@ -262,17 +262,21 @@ export default async function AccountsPage() {
 
   return (
     <main>
-      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4">
+      <header className="border-b border-slate-200/70 bg-white/90 px-4 py-4 backdrop-blur sm:px-8">
         <div>
-          <h1 className="text-lg font-semibold text-[#0a1220]">Managed accounts</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Accounts your agent created on external services. Spendex manages the
-            credentials and billing automatically.
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            Access
+          </p>
+          <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+            Managed accounts
+          </h1>
+          <p className="mt-1 text-xs text-slate-500">
+            External service accounts created through Spendex, with credentials and billing state.
           </p>
         </div>
       </header>
 
-      <div className="px-4 sm:px-8 py-7 max-w-5xl">
+      <div className="max-w-6xl px-4 py-7 sm:px-8">
         {accounts.length === 0 ? (
           <EmptyState />
         ) : (
@@ -306,8 +310,8 @@ function EmptyState() {
       </div>
       <p className="text-sm font-medium text-slate-600">No managed accounts yet</p>
       <p className="text-xs text-slate-400 mt-1.5 max-w-md mx-auto leading-relaxed">
-        When your agent needs to sign up to a service (Vercel, Modal, etc.), it
-        will create one here automatically.
+        Accounts created through signup flows appear here with status, credentials,
+        and linked billing activity.
       </p>
     </div>
   );

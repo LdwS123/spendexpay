@@ -35,84 +35,133 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070d18] flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="mb-8 text-center">
-          <span className="text-2xl font-bold text-white tracking-tight">
-            Spendex <span className="text-[#00e5b4]">Pay</span>
-          </span>
-          <p className="mt-2 text-sm text-white/40">Sign in to your account</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Error banner */}
-          {error && (
-            <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
-              {error}
+    <main className="min-h-screen bg-[#070d18] text-white">
+      <div className="grid min-h-screen lg:grid-cols-[1fr_440px]">
+        <section className="hidden lg:flex flex-col justify-between border-r border-white/8 px-12 py-10">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#00e5b4] text-sm font-black text-[#070d18]">
+              S
+            </span>
+            <div>
+              <p className="text-sm font-semibold tracking-tight">Spendex</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                Agent finance
+              </p>
             </div>
-          )}
-
-          {/* Email */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-xs font-medium text-white/50 mb-1.5"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg bg-white/5 border border-white/10 px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#00e5b4]/60 focus:ring-1 focus:ring-[#00e5b4]/30 transition-colors"
-              placeholder="you@example.com"
-            />
           </div>
 
-          {/* Password */}
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-xs font-medium text-white/50 mb-1.5"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg bg-white/5 border border-white/10 px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#00e5b4]/60 focus:ring-1 focus:ring-[#00e5b4]/30 transition-colors"
-              placeholder="••••••••"
-            />
+          <div className="max-w-xl">
+            <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#00e5b4]">
+              Control plane
+            </p>
+            <h1 className="max-w-lg text-5xl font-semibold leading-[1.04] tracking-[-0.04em]">
+              Keep agent payments inside a governed workspace.
+            </h1>
+            <p className="mt-5 max-w-md text-sm leading-6 text-white/48">
+              Manage funding, virtual cards, approval requests, service
+              accounts, and audit history from one private dashboard.
+            </p>
           </div>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-2 rounded-lg bg-[#00e5b4] hover:bg-[#00e5b4]/90 disabled:opacity-50 disabled:cursor-not-allowed text-[#070d18] font-semibold text-sm px-4 py-2.5 transition-opacity"
-          >
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
+          <div className="grid max-w-lg grid-cols-3 gap-px overflow-hidden rounded-xl border border-white/8 bg-white/8 text-xs">
+            {["Consent", "Rules", "Audit"].map((label) => (
+              <div key={label} className="bg-[#0a1220] px-4 py-3">
+                <p className="font-medium text-white/82">{label}</p>
+                <p className="mt-1 text-[11px] text-white/32">Enforced live</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <p className="mt-6 text-center text-xs text-white/20">
-          Don&apos;t have an account?{" "}
-          <a
-            href="mailto:support@spendexai.com"
-            className="text-[#00e5b4]/60 hover:text-[#00e5b4] transition-colors"
-          >
-            Contact us
-          </a>
-        </p>
+        <section className="flex items-center justify-center px-5 py-10">
+          <div className="w-full max-w-sm">
+            <div className="mb-8 lg:hidden">
+              <span className="text-xl font-semibold tracking-tight">
+                Spendex
+              </span>
+              <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/35">
+                Agent finance
+              </p>
+            </div>
+
+            <div className="mb-7">
+              <h2 className="text-2xl font-semibold tracking-tight">
+                Sign in
+              </h2>
+              <p className="mt-2 text-sm text-white/42">
+                Access your agent payment workspace.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="rounded-lg border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label
+                  htmlFor="email"
+                  className="mb-1.5 block text-xs font-medium text-white/52"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.045] px-3.5 py-2.5 text-sm text-white placeholder-white/30 transition-colors focus:border-[#00e5b4]/70 focus:outline-none focus:ring-2 focus:ring-[#00e5b4]/20"
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="password"
+                  className="mb-1.5 block text-xs font-medium text-white/52"
+                >
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.045] px-3.5 py-2.5 text-sm text-white placeholder-white/22 transition-colors focus:border-[#00e5b4]/70 focus:outline-none focus:ring-2 focus:ring-[#00e5b4]/20"
+                  placeholder="Password"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-lg bg-[#00e5b4] px-4 py-2.5 text-sm font-semibold text-[#070d18] transition-colors hover:bg-[#00c49a] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+
+            <p className="mt-6 text-xs text-white/30">
+              Need access?{" "}
+              <a
+                href="mailto:support@spendexai.com"
+                className="text-[#00e5b4]/80 transition-colors hover:text-[#00e5b4]"
+              >
+                Contact Spendex
+              </a>
+            </p>
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

@@ -313,7 +313,7 @@ export default function ConsentPreferencesPage() {
           >
             {mode === "auto_below_threshold" && (
               <div className="mt-3 max-w-xs">
-                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">
+                <label htmlFor="consent_threshold" className="block text-[11px] font-medium text-slate-500 mb-1.5">
                   Threshold (€)
                 </label>
                 <div className="relative">
@@ -321,13 +321,16 @@ export default function ConsentPreferencesPage() {
                     €
                   </span>
                   <input
+                    id="consent_threshold"
+                    aria-label="Auto-approve threshold in euros"
                     type="number"
+                    inputMode="decimal"
                     min="0"
                     step="1"
                     disabled={loading}
                     value={threshold}
                     onChange={(e) => setThreshold(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50"
                   />
                 </div>
               </div>
@@ -613,27 +616,30 @@ function ModeRadio({
 function TelegramModal({ onClose }: { onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="telegram-modal-title"
+      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-black/40 sm:px-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl border border-slate-100 shadow-lg max-w-md w-full p-6"
+        className="bg-white sm:rounded-2xl sm:border sm:border-slate-100 shadow-lg sm:max-w-md w-full p-6 h-full sm:h-auto overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
-            <h3 className="text-sm font-semibold text-[#0a1220]">
+            <h3 id="telegram-modal-title" className="text-sm font-semibold text-[#0a1220]">
               Connect Telegram
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Get instant consent pings on your phone.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            aria-label="Close Telegram connect dialog"
+            className="text-slate-500 hover:text-slate-700 transition-colors -mr-1 p-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]"
           >
             <svg
               className="h-4 w-4"
@@ -641,6 +647,7 @@ function TelegramModal({ onClose }: { onClose: () => void }) {
               fill="none"
               stroke="currentColor"
               strokeWidth={1.5}
+              aria-hidden="true"
             >
               <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
             </svg>

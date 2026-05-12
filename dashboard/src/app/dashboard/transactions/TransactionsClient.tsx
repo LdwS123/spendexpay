@@ -129,43 +129,94 @@ function TypeChip({ type }: { type: string | null }) {
 }
 
 function TransactionRow({ tx, isNew }: { tx: AuditLog; isNew: boolean }) {
+  const amount =
+    tx.amount_usd != null ? formatAmount(tx.amount_usd) : "—";
+  const isFailed = FAILED_STATUSES.includes(tx.status);
+
   return (
     <Link
       href={`/dashboard/transactions/${tx.id}`}
-      className={`relative flex items-center gap-4 px-5 py-3.5 border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 transition-colors cursor-pointer ${
+      aria-label={`Transaction ${capitalise(tx.service)} ${amount} on ${formatDate(tx.created_at)}, status ${tx.status}`}
+      className={`relative block border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 transition-colors cursor-pointer min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4] focus-visible:ring-inset ${
         isNew ? "realtime-flash" : ""
       }`}
     >
-      <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 shrink-0">
-        <ServiceIcon service={tx.service} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-[#0a1220]">{capitalise(tx.service)}</span>
-          <TypeChip type={tx.transaction_type} />
-          {isNew && (
-            <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#00e5b4]/20 text-[#00a882] uppercase tracking-wide">
-              New
+      {/* Mobile card layout: stacked, larger amount, full width */}
+      <div className="flex sm:hidden gap-3 px-4 py-3.5">
+        <div className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+          <ServiceIcon service={tx.service} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-sm font-semibold text-[#0a1220] truncate">
+              {capitalise(tx.service)}
             </span>
+            <span
+              className={`text-base font-semibold tabular-nums shrink-0 ${
+                tx.status === "success" ? "text-[#0a1220]" : "text-slate-500"
+              }`}
+            >
+              {amount}
+            </span>
+          </div>
+          {tx.description && (
+            <p className="text-xs text-slate-500 mt-0.5 truncate">
+              {tx.description}
+            </p>
+          )}
+          {tx.error_message && isFailed && (
+            <p className="text-xs text-red-500 mt-0.5 truncate">
+              {tx.error_message}
+            </p>
+          )}
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <StatusBadge status={tx.status} />
+            <TypeChip type={tx.transaction_type} />
+            <span className="text-[11px] text-slate-500 ml-auto">
+              {formatDate(tx.created_at)}
+            </span>
+            {isNew && (
+              <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#00e5b4]/20 text-[#00a882] uppercase tracking-wide">
+                New
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop row layout — unchanged */}
+      <div className="hidden sm:flex items-center gap-4 px-5 py-3.5">
+        <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+          <ServiceIcon service={tx.service} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-[#0a1220]">{capitalise(tx.service)}</span>
+            <TypeChip type={tx.transaction_type} />
+            {isNew && (
+              <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#00e5b4]/20 text-[#00a882] uppercase tracking-wide">
+                New
+              </span>
+            )}
+          </div>
+          {tx.description && (
+            <p className="text-xs text-slate-500 mt-0.5 truncate max-w-sm">{tx.description}</p>
+          )}
+          {tx.error_message && isFailed && (
+            <p className="text-xs text-red-500 mt-0.5 truncate max-w-sm">{tx.error_message}</p>
           )}
         </div>
-        {tx.description && (
-          <p className="text-xs text-slate-400 mt-0.5 truncate max-w-sm">{tx.description}</p>
-        )}
-        {tx.error_message && FAILED_STATUSES.includes(tx.status) && (
-          <p className="text-xs text-red-400 mt-0.5 truncate max-w-sm">{tx.error_message}</p>
-        )}
-      </div>
-      <div className="shrink-0">
-        <StatusBadge status={tx.status} />
-      </div>
-      <div className="shrink-0 w-20 text-right">
-        <span className={`text-sm font-semibold tabular-nums ${tx.status === "success" ? "text-[#0a1220]" : "text-slate-400"}`}>
-          {tx.amount_usd != null ? formatAmount(tx.amount_usd) : "—"}
-        </span>
-      </div>
-      <div className="shrink-0 w-40 text-right">
-        <span className="text-xs text-slate-400">{formatDate(tx.created_at)}</span>
+        <div className="shrink-0">
+          <StatusBadge status={tx.status} />
+        </div>
+        <div className="shrink-0 w-20 text-right">
+          <span className={`text-sm font-semibold tabular-nums ${tx.status === "success" ? "text-[#0a1220]" : "text-slate-500"}`}>
+            {amount}
+          </span>
+        </div>
+        <div className="shrink-0 w-40 text-right">
+          <span className="text-xs text-slate-500">{formatDate(tx.created_at)}</span>
+        </div>
       </div>
     </Link>
   );
@@ -253,18 +304,18 @@ export default function TransactionsClient({
 
   const headerRow = useMemo(
     () => (
-      <div className="flex items-center gap-4 px-5 py-2.5 border-b border-slate-100 bg-slate-50/50">
+      <div className="hidden sm:flex items-center gap-4 px-5 py-2.5 border-b border-slate-100 bg-slate-50/50">
         <div className="w-8 shrink-0" />
-        <div className="flex-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+        <div className="flex-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
           Service
         </div>
-        <div className="shrink-0 w-28 text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+        <div className="shrink-0 w-28 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
           Status
         </div>
-        <div className="shrink-0 w-20 text-right text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+        <div className="shrink-0 w-20 text-right text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
           Amount
         </div>
-        <div className="shrink-0 w-40 text-right text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+        <div className="shrink-0 w-40 text-right text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
           Date
         </div>
       </div>

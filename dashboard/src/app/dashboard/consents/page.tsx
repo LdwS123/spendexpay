@@ -74,11 +74,17 @@ export default async function ConsentsPage() {
 
   return (
     <main>
-      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+      <header className="border-b border-slate-200/70 bg-white/90 px-4 py-4 backdrop-blur sm:px-8">
+        <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold text-[#0a1220]">Consents</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Review pending consent requests from your agent.
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Control
+            </p>
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+              Approvals
+            </h1>
+            <p className="mt-1 text-xs text-slate-500">
+              Human decisions required before Spendex continues a sensitive action.
           </p>
         </div>
         <Link
@@ -87,9 +93,10 @@ export default async function ConsentsPage() {
         >
           Preferences →
         </Link>
+        </div>
       </header>
 
-      <div className="px-4 sm:px-8 py-7 max-w-5xl space-y-8">
+      <div className="max-w-6xl space-y-8 px-4 py-7 sm:px-8">
         <ConsentsClient
           initialPending={pending}
           initialHistory={history}

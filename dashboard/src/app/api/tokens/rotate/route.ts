@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createHmac, randomBytes } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
+import { require2FA } from "@/lib/require-2fa";
 
 export const dynamic = "force-dynamic";
 
@@ -35,11 +36,17 @@ async function authedClient() {
 // before being written to `users.mcp_token`. The raw token is returned
 // once in the response — this is the only moment the user can capture it.
 
-export async function POST(): Promise<NextResponse> {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   const { supabase, user } = await authedClient();
   if (!user) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
+
+  // Rotating the MCP token invalidates every agent's current credential.
+  // Gate it behind 2FA when enabled so a session-hijack can't lock the
+  // user out of their own agents.
+  const gate = await require2FA(user.id, req);
+  if (gate.blocked) return gate.response;
 
   // Generate raw token: spx_ + 32 random hex chars (16 bytes)
   const rawToken = "spx_" + randomBytes(16).toString("hex");

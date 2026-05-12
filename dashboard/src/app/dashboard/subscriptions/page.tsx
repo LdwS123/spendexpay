@@ -86,11 +86,17 @@ export default async function SubscriptionsPage() {
 
   return (
     <main>
-      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+      <header className="border-b border-slate-200/70 bg-white/90 px-4 py-4 backdrop-blur sm:px-8">
+        <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold text-[#0a1220]">Subscriptions</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Recurring charges tracked across every service. Cancel or pause anytime.
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Ledger
+            </p>
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+              Subscriptions
+            </h1>
+            <p className="mt-1 text-xs text-slate-500">
+              Recurring charges grouped by service, cadence, and renewal state.
           </p>
         </div>
         {subscriptions.length > 0 && (
@@ -98,9 +104,10 @@ export default async function SubscriptionsPage() {
             {activeSubs.length} active · ${monthlyTotal.toFixed(2)}/mo
           </span>
         )}
+        </div>
       </header>
 
-      <div className="px-4 sm:px-8 py-7 max-w-5xl">
+      <div className="max-w-6xl px-4 py-7 sm:px-8">
         <SubscriptionsClient initialSubscriptions={subscriptions} />
       </div>
     </main>

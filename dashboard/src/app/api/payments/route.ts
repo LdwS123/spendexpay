@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { getAdminClient } from "@/lib/supabase";
+import { require2FA } from "@/lib/require-2fa";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,11 @@ export async function GET(): Promise<NextResponse> {
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
   const userId = await getAuthedUserId();
   if (!userId) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+
+  // Removing a payment method is critical — if the user has 2FA on, demand
+  // a code. Graceful when 2FA is off.
+  const gate = await require2FA(userId, req);
+  if (gate.blocked) return gate.response;
 
   let parsed: unknown;
   try {

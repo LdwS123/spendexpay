@@ -140,19 +140,27 @@ function AddCardModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-card-title"
+      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:p-4 bg-black/40 sm:backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
-          <h2 className="text-base font-semibold text-[#0a1220]">Add credit or debit card</h2>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 20 20" stroke="currentColor" strokeWidth={1.5}>
+      <div className="bg-white sm:rounded-2xl shadow-xl w-full sm:max-w-md flex flex-col h-full sm:h-auto sm:max-h-[90vh]">
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+          <h2 id="add-card-title" className="text-base font-semibold text-[#0a1220]">Add credit or debit card</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close add card dialog"
+            className="text-slate-500 hover:text-slate-700 -mr-1 p-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 20 20" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
               <path d="M6 6l8 8M14 6l-8 8" strokeLinecap="round" />
             </svg>
           </button>
         </div>
-        <div className="p-6">
+        <div className="p-5 sm:p-6 flex-1 overflow-y-auto">
           <Elements stripe={stripePromise} options={{ clientSecret }}>
             <CardForm onSuccess={onSuccess} onCancel={onClose} />
           </Elements>
@@ -217,49 +225,60 @@ export default function PaymentsClient({ initialMethod }: { initialMethod: Saved
 
   return (
     <main>
-      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-[#0a1220]">Funding source</h1>
-          <p className="text-xs text-slate-400 mt-0.5">The card that funds your Spendex wallet.</p>
+      <header className="border-b border-slate-200/70 bg-white/90 px-4 py-4 backdrop-blur sm:px-8">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Control
+            </p>
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+              Funding
+            </h1>
+            <p className="mt-1 text-xs text-slate-500">
+              Payment method used to fund authorized agent purchases.
+            </p>
         </div>
         {!paymentMethod && (
           <button
             type="button"
             onClick={openAddCard}
             disabled={loadingSetup}
-            className="bg-[#00e5b4] hover:bg-[#00c49a] disabled:opacity-50 text-[#070d18] font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
+              className="rounded-lg bg-[#070d18] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f1c30] disabled:opacity-50"
           >
-            {loadingSetup ? "Loading…" : "Add funding source"}
+              {loadingSetup ? "Loading..." : "Add funding source"}
           </button>
         )}
+        </div>
       </header>
 
-      <div className="px-4 sm:px-8 py-7 max-w-3xl">
+      <div className="max-w-3xl px-4 py-7 sm:px-8">
         {setupError && (
           <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-3">
             {setupError}
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-slate-100">
+        <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white">
           {paymentMethod ? (
-            <div className="p-5 flex items-center gap-4">
-              <CardBrandIcon brand={paymentMethod.brand} />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-[#0a1220] capitalize">
-                  {paymentMethod.brand} •••• {paymentMethod.last4}
-                </p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Expires {paymentMethod.expMonth?.toString().padStart(2, "0")}/{paymentMethod.expYear}
-                </p>
+            <div className="p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <CardBrandIcon brand={paymentMethod.brand} />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[#0a1220] capitalize">
+                    {paymentMethod.brand} •••• {paymentMethod.last4}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Expires {paymentMethod.expMonth?.toString().padStart(2, "0")}/{paymentMethod.expYear}
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">Default</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">Default</span>
                 <button
                   type="button"
                   onClick={openAddCard}
                   disabled={loadingSetup}
-                  className="text-xs text-slate-500 hover:text-[#0a1220] border border-slate-200 hover:border-slate-300 px-3 py-1.5 rounded-lg transition-colors"
+                  className="text-xs text-slate-700 hover:text-[#0a1220] border border-slate-200 hover:border-slate-300 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]"
                 >
                   Replace
                 </button>
@@ -267,9 +286,9 @@ export default function PaymentsClient({ initialMethod }: { initialMethod: Saved
                   type="button"
                   onClick={handleRemove}
                   disabled={removing}
-                  className="text-xs text-red-500 hover:text-red-600 border border-red-100 hover:border-red-200 px-3 py-1.5 rounded-lg transition-colors"
+                  className="text-xs text-red-600 hover:text-red-700 border border-red-100 hover:border-red-200 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                 >
-                  {removing ? "Removing…" : "Remove"}
+                  {removing ? "Removing..." : "Remove"}
                 </button>
               </div>
             </div>
@@ -283,24 +302,26 @@ export default function PaymentsClient({ initialMethod }: { initialMethod: Saved
               </div>
               <p className="text-sm font-medium text-slate-600">No funding source</p>
               <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">
-                Connect a card to fund your Spendex wallet. Your agent spends from the wallet, never directly from this card.
+                Connect the payment method Spendex uses for authorized purchases and wallet funding events.
               </p>
               <button
                 type="button"
                 onClick={openAddCard}
                 disabled={loadingSetup}
-                className="mt-5 bg-[#00e5b4] hover:bg-[#00c49a] disabled:opacity-50 text-[#070d18] font-semibold text-sm px-5 py-2 rounded-lg transition-colors"
+                className="mt-5 rounded-lg bg-[#070d18] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f1c30] disabled:opacity-50"
               >
-                {loadingSetup ? "Loading…" : "Add funding source"}
+                {loadingSetup ? "Loading..." : "Add funding source"}
               </button>
             </div>
           )}
         </div>
 
-        <div className="mt-6 bg-slate-50 border border-slate-100 rounded-xl p-4">
-          <p className="text-xs font-medium text-slate-600 mb-1">How funding works</p>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            When your wallet runs low, this card tops it up automatically. Your agent spends from the wallet — never directly from this card — and every top-up appears in Transactions.
+        <div className="mt-6 rounded-xl border border-slate-200/70 bg-white p-4">
+          <p className="mb-1 text-xs font-medium text-slate-700">How funding is used</p>
+          <p className="text-xs leading-relaxed text-slate-500">
+            Spendex stores this method with Stripe. Agent payments still pass
+            through your rules, consent checks, and transaction log before money
+            moves.
           </p>
         </div>
       </div>

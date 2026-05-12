@@ -10,6 +10,8 @@ export interface VirtualCardSummary {
   last4: string;
   /** Stripe card brand string, e.g. "Visa", "Mastercard". */
   brand: string;
+  /** Stripe Issuing card status. 'active' or 'inactive'. */
+  status: "active" | "inactive";
 }
 
 interface Props {
@@ -61,27 +63,42 @@ const INTEGRATIONS: Integration[] = [
 
 // ─── component ───────────────────────────────────────────────────────────────
 
-export default function ServicesClient({ card }: Props) {
+export default function ServicesClient({ card: initialCard }: Props) {
+  // We mirror the server-provided card in local state so the freeze /
+  // unfreeze flow can flip the status badge without a full page reload.
+  const [card, setCard] = useState<VirtualCardSummary | null>(initialCard);
+
   return (
     <main>
-      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4">
+      <header className="border-b border-slate-200/70 bg-white/90 px-4 py-4 backdrop-blur sm:px-8">
         <div>
-          <h1 className="text-lg font-semibold text-[#0a1220]">Wallet</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Your AI agent uses this wallet to pay autonomously. You never need
-            to type a card number again.
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            Control
+          </p>
+          <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+            Virtual card
+          </h1>
+          <p className="mt-1 text-xs text-slate-500">
+            Card status, fallback payment details, and service integration coverage.
           </p>
         </div>
       </header>
 
-      <div className="px-4 sm:px-8 py-7 max-w-5xl space-y-10">
+      <div className="max-w-6xl space-y-10 px-4 py-7 sm:px-8">
         {/* Card showcase */}
         <section>
           <p className="text-[11px] font-semibold text-slate-400 tracking-widest uppercase mb-3">
             Your virtual card
           </p>
           {card ? (
-            <CardShowcase last4={card.last4} brand={card.brand} />
+            <CardShowcase
+              last4={card.last4}
+              brand={card.brand}
+              status={card.status}
+              onStatusChange={(next) =>
+                setCard((prev) => (prev ? { ...prev, status: next } : prev))
+              }
+            />
           ) : (
             <NoCardState />
           )}
@@ -91,10 +108,10 @@ export default function ServicesClient({ card }: Props) {
         <section>
           <div className="mb-4">
             <p className="text-[11px] font-semibold text-slate-400 tracking-widest uppercase">
-              How your agent uses it
+              Authorization path
             </p>
             <p className="text-sm text-slate-500 mt-1">
-              Set rules once. Your agent handles the rest.
+              Each charge is checked against limits, consent state, and merchant data.
             </p>
           </div>
           <AgentFlowDiagram />
@@ -107,9 +124,8 @@ export default function ServicesClient({ card }: Props) {
               Active integrations
             </p>
             <p className="text-sm text-slate-500 mt-1">
-              Native integrations let your agent pay without touching card
-              numbers. Until then, the wallet exposes its virtual card to the
-              agent which uses it transparently.
+              Native integrations avoid card exposure where supported. The
+              virtual card remains the controlled fallback for every other service.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -134,8 +150,8 @@ export default function ServicesClient({ card }: Props) {
 function AgentFlowDiagram() {
   const steps = [
     {
-      title: "Your agent needs to pay",
-      detail: "A coding agent hits a paywall — deploy, model call, GPU job.",
+      title: "A service needs payment",
+      detail: "Deploys, model calls, GPU jobs, and subscriptions create charge requests.",
     },
     {
       title: "Calls pay_for_service() via MCP",
@@ -146,7 +162,7 @@ function AgentFlowDiagram() {
       detail: "Budget caps, allowed services, per-call limits — all enforced.",
     },
     {
-      title: "Approved or declined — agent adapts",
+      title: "Approved or declined",
       detail:
         "On approve, payment completes. On decline, the agent asks you or finds another path.",
     },
@@ -486,21 +502,32 @@ function DetailField({ label, value }: { label: string; value: string }) {
 interface CardShowcaseProps {
   last4: string;
   brand: string;
+  status: "active" | "inactive";
+  onStatusChange: (next: "active" | "inactive") => void;
 }
 
-function CardShowcase({ last4, brand }: CardShowcaseProps) {
+function CardShowcase(props: CardShowcaseProps) {
+  const { last4, brand, status } = props;
+  const frozen = status === "inactive";
   return (
     <div className="flex flex-col lg:flex-row items-start gap-6">
       {/* The card itself — visual only. Details live in the advanced section. */}
       <div
         className="relative w-full max-w-[400px] aspect-[1.586/1] rounded-2xl p-6 text-white overflow-hidden shrink-0"
         style={{
-          background:
-            "linear-gradient(135deg, #070d18 0%, #0a1220 55%, #0e1a30 100%)",
+          background: frozen
+            ? "linear-gradient(135deg, #1a1f2c 0%, #232938 55%, #2c3344 100%)"
+            : "linear-gradient(135deg, #070d18 0%, #0a1220 55%, #0e1a30 100%)",
           boxShadow:
             "0 20px 40px -12px rgba(7,13,24,0.45), 0 1px 0 rgba(255,255,255,0.04) inset",
+          filter: frozen ? "saturate(0.5)" : undefined,
         }}
       >
+        {frozen && (
+          <span className="absolute top-3 right-3 z-20 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest bg-red-500/90 text-white px-2 py-0.5 rounded">
+            Frozen
+          </span>
+        )}
         {/* Decorative glow */}
         <div
           aria-hidden="true"
@@ -583,16 +610,134 @@ function CardShowcase({ last4, brand }: CardShowcaseProps) {
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#00a882] bg-[#00e5b4]/15 px-2.5 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#00a882]" />
-            Card active
-          </span>
+          {frozen ? (
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-red-600 bg-red-50 border border-red-100 px-2.5 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              Card frozen
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#00a882] bg-[#00e5b4]/15 px-2.5 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00a882]" />
+              Card active
+            </span>
+          )}
           <span className="text-[11px] text-slate-400">
             {brand} ending in {last4}
           </span>
         </div>
+
+        <div className="mt-4">
+          <FreezeControl status={status} onStatusChange={props.onStatusChange} />
+        </div>
       </div>
     </div>
+  );
+}
+
+// ─── freeze control ──────────────────────────────────────────────────────────
+//
+// Inline freeze / unfreeze trigger. Renders the button in the wallet
+// panel and a confirmation modal before sending the API call.
+
+interface FreezeControlProps {
+  status: "active" | "inactive";
+  onStatusChange: (next: "active" | "inactive") => void;
+}
+
+function FreezeControl({ status, onStatusChange }: FreezeControlProps) {
+  const [confirming, setConfirming] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const frozen = status === "inactive";
+
+  async function applyChange(): Promise<void> {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/wallet/freeze", {
+        method: frozen ? "DELETE" : "POST",
+      });
+      const json = (await res.json()) as {
+        status?: "active" | "inactive";
+        error?: string;
+      };
+      if (!res.ok || !json.status) {
+        setError(json.error ?? "Failed to update card status");
+        return;
+      }
+      onStatusChange(json.status);
+      setConfirming(false);
+    } catch {
+      setError("Network error — please try again");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setError(null);
+          setConfirming(true);
+        }}
+        className={
+          frozen
+            ? "text-xs font-semibold text-[#0a1220] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors"
+            : "text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 hover:border-red-200 rounded-lg px-3 py-2 transition-colors"
+        }
+      >
+        {frozen ? "Unfreeze card" : "🚨 Freeze card"}
+      </button>
+
+      {confirming && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        >
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <p className="text-sm font-semibold text-[#0a1220]">
+              {frozen ? "Unfreeze your card?" : "Freeze your card?"}
+            </p>
+            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+              {frozen
+                ? "Your card will be active again. New transactions will be authorised against your rules."
+                : "Cette action décline toutes les nouvelles tx jusqu'à unfreeze. Continuer ?"}
+            </p>
+            {error && <p className="text-xs text-red-500 mt-3">{error}</p>}
+            <div className="mt-5 flex items-center gap-2 justify-end">
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => setConfirming(false)}
+                className="text-xs font-medium text-slate-600 hover:text-slate-800 border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={applyChange}
+                className={
+                  frozen
+                    ? "text-xs font-semibold text-[#070d18] bg-[#00e5b4] hover:bg-[#00c49a] rounded-lg px-3 py-2 transition-colors disabled:opacity-50"
+                    : "text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg px-3 py-2 transition-colors disabled:opacity-50"
+                }
+              >
+                {submitting
+                  ? "Working…"
+                  : frozen
+                    ? "Yes, unfreeze"
+                    : "Yes, freeze card"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

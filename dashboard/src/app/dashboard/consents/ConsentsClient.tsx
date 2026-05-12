@@ -363,71 +363,113 @@ export default function ConsentsClient({
             <p className="text-sm text-slate-500">No past requests.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[420px]">
-                <thead>
-                  <tr className="border-b border-slate-100">
-                    <th className="text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-5 py-3">
-                      Date
-                    </th>
-                    <th className="text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-4 py-3">
-                      Service
-                    </th>
-                    <th className="text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-4 py-3 hidden md:table-cell">
-                      Action
-                    </th>
-                    <th className="text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-4 py-3">
-                      Status
-                    </th>
-                    <th className="text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-5 py-3 hidden lg:table-cell">
-                      Decision
-                    </th>
-                    <th className="text-right text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-5 py-3">
-                      {""}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {history.map((row) => (
-                    <tr
-                      key={row.id}
-                      className={`hover:bg-slate-50/60 transition-colors ${
-                        newIds.has(row.id) ? "realtime-flash" : ""
-                      }`}
-                    >
-                      <td className="px-5 py-3 text-xs text-slate-500 whitespace-nowrap">
-                        {formatDateTime(row.created_at)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[#0a1220] font-medium">
+          <>
+            {/* Mobile: stacked cards */}
+            <div className="sm:hidden space-y-2">
+              {history.map((row) => (
+                <Link
+                  key={row.id}
+                  href={`/dashboard/consents/${row.id}`}
+                  aria-label={`Consent for ${serviceLabel(row.service)}, status ${row.status}, ${formatDateTime(row.created_at)}`}
+                  className={`block bg-white border border-slate-100 rounded-xl px-4 py-3 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4] ${
+                    newIds.has(row.id) ? "realtime-flash" : ""
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-[#0a1220] truncate">
                         {serviceLabel(row.service)}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-500 hidden md:table-cell">
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5 truncate">
                         {row.action ?? "—"}
                         {row.amount_usd && row.amount_usd > 0
                           ? ` · €${row.amount_usd.toFixed(2)}`
                           : ""}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={row.status} />
-                      </td>
-                      <td className="px-5 py-3 text-xs text-slate-500 hidden lg:table-cell">
-                        {row.decision ?? "—"}
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <Link
-                          href={`/dashboard/consents/${row.id}`}
-                          className="text-xs font-semibold text-[#00a882] hover:text-[#00e5b4] transition-colors"
-                        >
-                          View →
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </p>
+                    </div>
+                    <div className="shrink-0">
+                      <StatusBadge status={row.status} />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
+                    <span className="text-[11px] text-slate-500">
+                      {formatDateTime(row.created_at)}
+                    </span>
+                    <span className="text-xs font-semibold text-[#00a882]">
+                      View →
+                    </span>
+                  </div>
+                </Link>
+              ))}
             </div>
-          </div>
+
+            {/* Desktop: table */}
+            <div className="hidden sm:block bg-white rounded-xl border border-slate-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[420px]">
+                  <thead>
+                    <tr className="border-b border-slate-100">
+                      <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wide px-5 py-3">
+                        Date
+                      </th>
+                      <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">
+                        Service
+                      </th>
+                      <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 hidden md:table-cell">
+                        Action
+                      </th>
+                      <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">
+                        Status
+                      </th>
+                      <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wide px-5 py-3 hidden lg:table-cell">
+                        Decision
+                      </th>
+                      <th className="text-right text-[11px] font-semibold text-slate-500 uppercase tracking-wide px-5 py-3">
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {history.map((row) => (
+                      <tr
+                        key={row.id}
+                        className={`hover:bg-slate-50/60 transition-colors ${
+                          newIds.has(row.id) ? "realtime-flash" : ""
+                        }`}
+                      >
+                        <td className="px-5 py-3 text-xs text-slate-500 whitespace-nowrap">
+                          {formatDateTime(row.created_at)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#0a1220] font-medium">
+                          {serviceLabel(row.service)}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-500 hidden md:table-cell">
+                          {row.action ?? "—"}
+                          {row.amount_usd && row.amount_usd > 0
+                            ? ` · €${row.amount_usd.toFixed(2)}`
+                            : ""}
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusBadge status={row.status} />
+                        </td>
+                        <td className="px-5 py-3 text-xs text-slate-500 hidden lg:table-cell">
+                          {row.decision ?? "—"}
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <Link
+                            href={`/dashboard/consents/${row.id}`}
+                            className="text-xs font-semibold text-[#00a882] hover:text-[#00e5b4] transition-colors"
+                          >
+                            View →
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
       </section>
 

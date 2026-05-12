@@ -123,21 +123,30 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
 
   return (
     <main>
-      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-[#0a1220]">Transactions</h1>
-          <p className="text-xs text-slate-400 mt-0.5">Full history of every charge attempt.</p>
+      <header className="border-b border-slate-200/70 bg-white/90 px-4 py-4 backdrop-blur sm:px-8">
+        <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Ledger
+            </p>
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+              Transactions
+            </h1>
+            <p className="mt-1 text-xs text-slate-500">
+              Charge attempts, approvals, declines, and service context.
+            </p>
         </div>
         {total > 0 && (
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-500 shrink-0">
             {total} {total === 1 ? "transaction" : "transactions"}
             {statusFilter ? ` · ${statusFilter}` : ""}
           </span>
         )}
+        </div>
       </header>
 
-      <div className="px-4 sm:px-8 py-7 max-w-5xl">
-        <div className="flex items-center gap-3 mb-5">
+      <div className="max-w-6xl px-4 py-7 sm:px-8">
+        <div className="flex items-center gap-2 sm:gap-3 mb-5 flex-wrap">
           {FILTERS.map((f) => (
             <FilterLink
               key={f.label}

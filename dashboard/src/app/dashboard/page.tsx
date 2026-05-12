@@ -308,20 +308,26 @@ export default async function DashboardPage() {
   return (
     <main className="flex-1 overflow-auto">
       {/* Header */}
-      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4 flex items-center justify-between">
+      <header className="border-b border-slate-200/70 bg-white/90 px-4 py-4 backdrop-blur sm:px-8">
+        <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-[#0a1220]">Overview</h1>
-          <p className="text-xs text-slate-400 mt-0.5">{currentMonth}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              {currentMonth}
+            </p>
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+              Agent spending
+            </h1>
         </div>
         <Link
           href="/dashboard/payments"
-          className="bg-[#00e5b4] hover:bg-[#00c49a] text-[#070d18] font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
+            className="rounded-lg bg-[#070d18] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f1c30]"
         >
-          Add funding source
+            Manage funding
         </Link>
+        </div>
       </header>
 
-      <div className="px-4 sm:px-8 py-7 max-w-5xl">
+      <div className="max-w-6xl px-4 py-7 sm:px-8">
         <AnomalyBanner />
         <OnboardingBanner
           hasFundingSource={onboarding.hasVirtualCard}
@@ -371,67 +377,63 @@ export default async function DashboardPage() {
               <StatCard label="Top service" value="—" sub="No data yet" />
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-100 p-8 max-w-xl">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-9 h-9 rounded-xl bg-[#00e5b4]/10 flex items-center justify-center shrink-0">
-                  <RocketIcon className="w-4 h-4 text-[#00c49a]" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#0a1220]">Get started with Spendex Pay</p>
-                  <p className="text-xs text-slate-400">
-                    Four steps to give your agent its own wallet.
-                  </p>
-                </div>
+            <div className="max-w-3xl overflow-hidden rounded-2xl border border-slate-200/70 bg-white">
+              <div className="border-b border-slate-100 px-6 py-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Setup
+                </p>
+                <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-[#0a1220]">
+                  Prepare this workspace for agent payments
+                </h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+                  Connect funding, issue an MCP token, and define the limits
+                  enforced before card details are revealed.
+                </p>
               </div>
 
-              <ol className="space-y-5">
-                <OnboardingStep
-                  number={1}
-                  title="Add a funding source"
-                  description="Connect a card to fund your wallet."
-                  action={{ label: "Add funding source", href: "/dashboard/payments" }}
-                />
-                <OnboardingStep
-                  number={2}
-                  title="Install the wallet in your agent"
-                  description="Add Spendex MCP to Claude Code, Cursor, or your agent of choice."
-                  action={{ label: "View install docs", href: "/docs#install" }}
-                />
-                <OnboardingStep
-                  number={3}
-                  title="Set your rules"
-                  description="Per-transaction cap, monthly budget, merchant whitelist."
-                  action={{ label: "Set rules", href: "/dashboard/rules" }}
-                />
-                <OnboardingStep
-                  number={4}
-                  title="Let Spendex sign up for you"
-                  description="Allow auto-signup on services your agent needs. You can disable this anytime in Rules."
-                  action={{ label: "Configure auto-signup", href: "/dashboard/rules" }}
-                />
-              </ol>
+              <div className="grid gap-0 md:grid-cols-[1fr_260px]">
+                <div className="p-6">
+                  <ol className="space-y-5">
+                    <OnboardingStep
+                      number={1}
+                      title="Connect funding"
+                      description="Add the payment method used to fund agent purchases."
+                      action={{ label: "Manage funding", href: "/dashboard/payments" }}
+                    />
+                    <OnboardingStep
+                      number={2}
+                      title="Create MCP access"
+                      description="Generate a token and add Spendex to Cursor, Claude Code, or another MCP client."
+                      action={{ label: "Manage MCP tokens", href: "/dashboard/tokens" }}
+                    />
+                    <OnboardingStep
+                      number={3}
+                      title="Define limits"
+                      description="Set per-transaction caps, monthly budgets, and merchant exclusions."
+                      action={{ label: "Review rules", href: "/dashboard/rules" }}
+                    />
+                    <OnboardingStep
+                      number={4}
+                      title="Review approvals"
+                      description="Pending consent requests appear here when an agent needs a human decision."
+                      action={{ label: "Open approvals", href: "/dashboard/consents" }}
+                    />
+                  </ol>
+                </div>
 
-              {/* Install snippet */}
-              <div className="mt-6 relative overflow-hidden rounded-xl bg-gradient-to-br from-[#0e1a2d] via-[#0a1322] to-[#070d18] p-5">
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-[#00e5b4]/20 blur-3xl"
-                />
-                <div className="relative flex items-center justify-between">
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                <div className="border-t border-slate-100 bg-[#070d18] p-6 text-white md:border-l md:border-t-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
                     Install
                   </p>
-                  <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-[#00e5b4]/80">
-                    Claude Code
-                  </p>
+                  <pre className="mt-4 whitespace-pre-wrap break-all font-mono text-[12px] leading-6 text-white/78">
+                    <span className="text-[#00e5b4]">$</span> npx @spendexai/mcp
+                  </pre>
+                  <div className="mt-5 space-y-2 border-t border-white/8 pt-5 text-xs text-white/45">
+                    <p>Auth: MCP token</p>
+                    <p>Controls: rules + consent</p>
+                    <p>Ledger: audit logs</p>
+                  </div>
                 </div>
-                <pre className="relative mt-3 font-mono text-[13px] leading-relaxed text-white whitespace-pre-wrap break-all">
-                  <span className="text-[#00e5b4]">$</span> claude mcp add spendex
-                </pre>
-                <p className="relative mt-3 text-[11px] text-white/40 leading-relaxed">
-                  One command. Spendex shows up as a tool your agent can call —
-                  it spends from the wallet, inside your rules.
-                </p>
               </div>
             </div>
 
@@ -676,21 +678,3 @@ function ReceiptIcon({ className }: { className?: string }) {
   );
 }
 
-function RocketIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 16 16"
-      stroke="currentColor"
-      strokeWidth={1.5}
-    >
-      <path
-        d="M8 2C8 2 4.5 4 4 8c-.25 2 .5 3.5 1.5 4.5M8 2c0 0 3.5 2 4 6 .25 2-.5 3.5-1.5 4.5M8 2v10"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="8" cy="12.5" r="1" />
-    </svg>
-  );
-}

@@ -81,9 +81,18 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="lg:flex min-h-screen bg-[#f8fafc]">
+    <div className="lg:flex min-h-screen bg-[#f6f7f9] text-[#0a1220]">
+      {/* Skip-to-content — visible only when focused via keyboard. */}
+      <a
+        href="#dashboard-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-lg focus:bg-[#070d18] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-[#00e5b4] focus:ring-2 focus:ring-[#00e5b4]"
+      >
+        Skip to content
+      </a>
       <Sidebar email={email} />
-      <div className="flex-1 min-w-0 lg:overflow-auto">{children}</div>
+      <div id="dashboard-content" className="flex-1 min-w-0 lg:overflow-auto">
+        {children}
+      </div>
     </div>
   );
 }

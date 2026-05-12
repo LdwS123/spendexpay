@@ -148,7 +148,8 @@ function OrderRow({ order }: { order: Order }) {
   return (
     <Link
       href={`/dashboard/transactions/${order.id}`}
-      className="flex items-center gap-4 px-5 py-4 border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 transition-colors cursor-pointer group"
+      aria-label={`Order: ${name}, ${order.amount_usd != null ? formatAmount(order.amount_usd, order.currency) : "no amount"}`}
+      className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4 border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 transition-colors cursor-pointer group min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4] focus-visible:ring-inset"
     >
       <ProductThumb src={order.product_image_url} alt={name} />
 
@@ -160,11 +161,11 @@ function OrderRow({ order }: { order: Order }) {
           <ServiceBadge service={order.service} />
         </div>
         {order.product_name && order.description && order.description !== order.product_name && (
-          <p className="text-xs text-slate-400 mt-1 truncate max-w-md">
+          <p className="text-xs text-slate-500 mt-1 truncate max-w-md">
             {order.description}
           </p>
         )}
-        <p className="text-[11px] text-slate-400 mt-1">
+        <p className="text-[11px] text-slate-500 mt-1">
           {formatRelative(order.created_at)}
         </p>
       </div>
@@ -294,21 +295,28 @@ export default async function OrdersPage() {
 
   return (
     <main>
-      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-[#0a1220]">Orders</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Everything your agent has bought for you.
+      <header className="border-b border-slate-200/70 bg-white/90 px-4 py-4 backdrop-blur sm:px-8">
+        <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Ledger
+            </p>
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+              Orders
+            </h1>
+            <p className="mt-1 text-xs text-slate-500">
+              Purchases grouped by merchant, amount, and source account.
           </p>
         </div>
         {totalOrders > 0 && (
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-500 shrink-0">
             {totalOrders} {totalOrders === 1 ? "order" : "orders"}
           </span>
         )}
+        </div>
       </header>
 
-      <div className="px-4 sm:px-8 py-7 max-w-5xl">
+      <div className="max-w-6xl px-4 py-7 sm:px-8">
         {/* Stat cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-7">
           <StatCard
@@ -337,14 +345,14 @@ export default async function OrdersPage() {
         {/* Orders list */}
         {orders.length === 0 ? (
           <div className="bg-white rounded-xl border border-slate-100 flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-4 text-2xl">
-              <span role="img" aria-label="empty bag">
-                🛍️
-              </span>
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-300">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                <path d="M3 5h10l-1 8H4L3 5zM3 5l-.5-2h-1M6 5V3.5a2 2 0 014 0V5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
             <p className="text-sm font-medium text-slate-600">No orders yet</p>
             <p className="text-xs text-slate-400 mt-1 max-w-sm leading-relaxed">
-              When your agent buys something, it appears here.
+              Completed purchases appear here after the first successful charge.
             </p>
           </div>
         ) : (

@@ -19,17 +19,14 @@ interface PerServiceLimit {
   blocked?: boolean;
 }
 
-// Curated list of merchants users most often want caps for. The "+" labels
-// double as the inline icons; keeping them as text emoji avoids dragging in
-// an icon set just for this page.
 const COMMON_SERVICES: ReadonlyArray<{ slug: string; label: string; icon: string }> = [
-  { slug: "vercel", label: "Vercel", icon: "▲" },
-  { slug: "modal", label: "Modal", icon: "⚡" },
-  { slug: "openai", label: "OpenAI", icon: "✨" },
-  { slug: "anthropic", label: "Anthropic", icon: "✦" },
-  { slug: "amazon", label: "Amazon", icon: "📦" },
-  { slug: "github", label: "GitHub", icon: "⌥" },
-  { slug: "cloudflare", label: "Cloudflare", icon: "☁" },
+  { slug: "vercel", label: "Vercel", icon: "Ve" },
+  { slug: "modal", label: "Modal", icon: "Mo" },
+  { slug: "openai", label: "OpenAI", icon: "Op" },
+  { slug: "anthropic", label: "Anthropic", icon: "An" },
+  { slug: "amazon", label: "Amazon", icon: "Am" },
+  { slug: "github", label: "GitHub", icon: "Gh" },
+  { slug: "cloudflare", label: "Cloudflare", icon: "Cf" },
 ];
 
 // ─── MCC catalogue ────────────────────────────────────────────────────────────
@@ -274,14 +271,19 @@ export default function RulesPage() {
 
   return (
     <main>
-      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4">
-        <h1 className="text-lg font-semibold text-[#0a1220]">Rules</h1>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Set your envelope. Your agent operates inside it — no prompts, no interruptions.
+      <header className="border-b border-slate-200/70 bg-white/90 px-4 py-4 backdrop-blur sm:px-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+          Control
+        </p>
+        <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+          Rules
+        </h1>
+        <p className="mt-1 text-xs text-slate-500">
+          Limits evaluated before card details are shared and before Stripe authorizes a charge.
         </p>
       </header>
 
-      <div className="px-4 sm:px-8 py-7 max-w-2xl space-y-5">
+      <div className="max-w-3xl space-y-5 px-4 py-7 sm:px-8">
         {loadError && (
           <div className="rounded-lg bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">
             Failed to load rules: {loadError}
@@ -289,15 +291,15 @@ export default function RulesPage() {
         )}
 
         {/* ── summary recap ───────────────────────────────────────────────── */}
-        <div className="rounded-xl border border-[#00e5b4]/30 bg-gradient-to-br from-[#00e5b4]/10 to-white p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#00876a] mb-2">
+        <div className="rounded-xl border border-slate-200/70 bg-white p-5">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
             Current limits
           </p>
           <p className="text-sm leading-relaxed text-[#070d18]">
             Your agent can spend up to{" "}
             <span className="font-semibold">{perTxDisplay}</span>, capped at{" "}
             <span className="font-semibold">{monthlyDisplay}</span>, on{" "}
-            <span className="font-semibold">dev-tool merchants only</span>
+            <span className="font-semibold">allowed merchant categories</span>
             {blockedMerchants.length > 0 && (
               <>
                 {" "}
@@ -310,7 +312,7 @@ export default function RulesPage() {
           </p>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-100 p-6 space-y-6">
+        <div className="space-y-6 rounded-xl border border-slate-200/70 bg-white p-6">
           {/* ── Maximum per transaction ────────────────────────────────── */}
           <section>
             <label htmlFor={perTxId} className="block text-sm font-semibold text-[#070d18] mb-1">
@@ -349,12 +351,13 @@ export default function RulesPage() {
               <input
                 id={perTxId}
                 type="number"
+                inputMode="decimal"
                 min="0"
                 disabled={loading}
                 value={perTx}
                 onChange={(e) => setPerTx(e.target.value)}
                 placeholder="Custom amount"
-                className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
           </section>
@@ -397,12 +400,13 @@ export default function RulesPage() {
               <input
                 id={monthlyId}
                 type="number"
+                inputMode="decimal"
                 min="0"
                 disabled={loading}
                 value={monthlyBudget}
                 onChange={(e) => setMonthlyBudget(e.target.value)}
                 placeholder="Custom amount"
-                className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
           </section>
@@ -431,7 +435,7 @@ export default function RulesPage() {
                   ...customSlugs.map((slug) => ({
                     slug,
                     label: slug.charAt(0).toUpperCase() + slug.slice(1),
-                    icon: "•",
+                    icon: "--",
                     isCustom: true,
                   })),
                 ];
@@ -454,7 +458,10 @@ export default function RulesPage() {
                       className="flex flex-col sm:flex-row sm:items-center gap-3 px-3 py-3"
                     >
                       <div className="flex items-center gap-2 min-w-[120px]">
-                        <span aria-hidden="true" className="text-base">
+                        <span
+                          aria-hidden="true"
+                          className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-[10px] font-semibold uppercase text-slate-500"
+                        >
                           {row.icon}
                         </span>
                         <span className="text-sm font-medium text-[#070d18]">
@@ -469,6 +476,7 @@ export default function RulesPage() {
                           </span>
                           <input
                             type="number"
+                            inputMode="decimal"
                             min="0"
                             disabled={loading || blocked}
                             value={monthly}
@@ -477,7 +485,7 @@ export default function RulesPage() {
                             }
                             placeholder="Monthly cap"
                             aria-label={`${row.label} monthly cap`}
-                            className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-400"
+                            className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-500"
                           />
                         </div>
 
@@ -487,6 +495,7 @@ export default function RulesPage() {
                           </span>
                           <input
                             type="number"
+                            inputMode="decimal"
                             min="0"
                             disabled={loading || blocked}
                             value={perTxCap}
@@ -495,7 +504,7 @@ export default function RulesPage() {
                             }
                             placeholder="Per-tx cap"
                             aria-label={`${row.label} per-transaction cap`}
-                            className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-400"
+                            className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-500"
                           />
                         </div>
 

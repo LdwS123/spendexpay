@@ -194,7 +194,7 @@ export default function RevealPassword({ accountId, disabled = false }: Props) {
 
       {confirmOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-[#070d18]/50"
+          className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:px-4 bg-[#070d18]/50"
           onClick={() => !loading && setConfirmOpen(false)}
         >
           <div
@@ -204,7 +204,7 @@ export default function RevealPassword({ accountId, disabled = false }: Props) {
             aria-labelledby={titleId}
             aria-describedby={descId}
             tabIndex={-1}
-            className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-sm w-full p-6 focus:outline-none"
+            className="bg-white sm:rounded-2xl shadow-xl sm:border sm:border-slate-100 sm:max-w-sm w-full p-6 focus:outline-none h-full sm:h-auto overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <p id={titleId} className="text-sm font-semibold text-[#0a1220]">
