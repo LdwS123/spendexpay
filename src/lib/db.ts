@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { config } from "../config.js";
 import type { PaymentMethod, ProviderCustomerId } from "./payments/types.js";
@@ -846,6 +846,153 @@ export async function getActiveVirtualCardForUser(
 
   if (!data) return null;
   return data as VirtualCardRecord;
+}
+
+// ---------------------------------------------------------------------------
+// Product preview cache
+//
+// `fetch_product_preview` writes one row per successful scrape — whether the
+// data came from our own server-side fetch or from the host agent's browser
+// tool (when the merchant blocks bots). Subsequent calls for the same URL
+// reuse the cached row until `ttl_expires_at` passes.
+//
+// See migrations/009_product_previews_cache.sql for the schema. The
+// `url_hash` column is a hex SHA-256 of the canonical URL (toString()) so
+// we can build a small, well-typed index.
+// ---------------------------------------------------------------------------
+
+export type ProductPreviewSource = "server_fetch" | "agent_extracted";
+
+export interface ProductPreviewRow {
+  url: string;
+  title: string | null;
+  image_url: string | null;
+  description: string | null;
+  price: number | null;
+  currency: string | null;
+  site_name: string | null;
+  source: ProductPreviewSource;
+  created_at: string;
+  ttl_expires_at: string;
+}
+
+interface RawProductPreviewRow {
+  url: string;
+  title: string | null;
+  image_url: string | null;
+  description: string | null;
+  price: number | string | null;
+  currency: string | null;
+  site_name: string | null;
+  source: ProductPreviewSource;
+  created_at: string;
+  ttl_expires_at: string;
+}
+
+/**
+ * Hash a URL for the `url_hash` column. Plain SHA-256 (not HMAC) is fine
+ * here because the value is not security-sensitive — we just need a stable,
+ * fixed-width key for indexing. Two different processes hashing the same
+ * URL must produce the same digest, which rules out HMAC with a salt.
+ */
+export function hashUrl(url: string): string {
+  return createHash("sha256").update(url).digest("hex");
+}
+
+/**
+ * Look up the freshest non-expired cached preview for a URL. Returns null
+ * when no row exists or the most recent one has expired.
+ *
+ * Filtering on `ttl_expires_at > now()` in SQL means the index sweep skips
+ * stale rows entirely — we never see them in application code, which makes
+ * "cache expired → re-fetch" automatic without an eviction job.
+ */
+export async function getCachedProductPreview(
+  url: string
+): Promise<ProductPreviewRow | null> {
+  const urlHash = hashUrl(url);
+  const nowIso = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("product_previews")
+    .select(
+      "url, title, image_url, description, price, currency, site_name, " +
+      "source, created_at, ttl_expires_at"
+    )
+    .eq("url_hash", urlHash)
+    .gt("ttl_expires_at", nowIso)
+    .order("ttl_expires_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    if (error.code !== "PGRST116") {
+      console.error(
+        `[db] getCachedProductPreview: unexpected error (code: ${error.code}): ` +
+        `${error.message}. url_hash=${urlHash}`
+      );
+    }
+    return null;
+  }
+
+  if (!data) return null;
+
+  const row = data as unknown as RawProductPreviewRow;
+  return {
+    url: row.url,
+    title: row.title,
+    image_url: row.image_url,
+    description: row.description,
+    // Supabase returns numeric columns as strings to preserve precision; coerce
+    // back to number for downstream consumers.
+    price: row.price === null ? null : Number(row.price),
+    currency: row.currency,
+    site_name: row.site_name,
+    source: row.source,
+    created_at: row.created_at,
+    ttl_expires_at: row.ttl_expires_at,
+  };
+}
+
+interface CacheProductPreviewParams {
+  url: string;
+  title: string | null;
+  imageUrl: string | null;
+  description: string | null;
+  price: number | null;
+  currency: string | null;
+  siteName: string | null;
+  source: ProductPreviewSource;
+}
+
+/**
+ * Insert one row into product_previews. Best-effort: a failure here does
+ * not invalidate the preview we already extracted, so we log the error and
+ * return rather than throw. The next call for the same URL will just miss
+ * the cache and re-scrape.
+ */
+export async function cacheProductPreview(
+  params: CacheProductPreviewParams
+): Promise<void> {
+  const urlHash = hashUrl(params.url);
+  const { error } = await supabase.from("product_previews").insert({
+    url: params.url,
+    url_hash: urlHash,
+    title: params.title,
+    image_url: params.imageUrl,
+    description: params.description,
+    price: params.price,
+    currency: params.currency,
+    site_name: params.siteName,
+    source: params.source,
+  });
+
+  if (error) {
+    console.error(
+      `[db] cacheProductPreview: failed to insert for url="${params.url}" ` +
+      `source=${params.source}: ${error.message} (code: ${error.code}).`
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

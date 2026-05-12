@@ -11,6 +11,8 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 vi.mock("../../lib/db.js", () => ({
   getUserByMcpToken: vi.fn(),
   logTransaction: vi.fn(),
+  getCachedProductPreview: vi.fn(),
+  cacheProductPreview: vi.fn(),
 }));
 
 vi.mock("../../lib/rate-limit.js", () => ({
@@ -31,6 +33,8 @@ vi.mock("../../config.js", () => ({
 import {
   getUserByMcpToken,
   logTransaction,
+  getCachedProductPreview,
+  cacheProductPreview,
 } from "../../lib/db.js";
 import { checkRateLimit } from "../../lib/rate-limit.js";
 import { registerFetchProductPreviewTool } from "../../tools/fetch-product-preview.js";
@@ -83,6 +87,11 @@ beforeEach(() => {
   vi.mocked(checkRateLimit).mockReturnValue({ allowed: true });
   vi.mocked(getUserByMcpToken).mockResolvedValue(MOCK_USER as any);
   vi.mocked(logTransaction).mockResolvedValue(undefined);
+  // Cache miss by default — individual tests override when they want a hit.
+  vi.mocked(getCachedProductPreview).mockReset();
+  vi.mocked(cacheProductPreview).mockReset();
+  vi.mocked(getCachedProductPreview).mockResolvedValue(null);
+  vi.mocked(cacheProductPreview).mockResolvedValue(undefined);
 });
 
 // ---------------------------------------------------------------------------
