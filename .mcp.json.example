@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "spendexpay": {
+      "command": "node",
+      "args": ["./dist/index.js"],
+      "env": {
+        "SPENDEX_DEV": "false",
+        "STRIPE_SECRET_KEY": "sk_test_REPLACE_WITH_YOUR_STRIPE_KEY",
+        "STRIPE_WEBHOOK_SECRET": "whsec_REPLACE_WITH_YOUR_WEBHOOK_SECRET",
+        "STRIPE_ISSUING_WEBHOOK_SECRET": "whsec_REPLACE_WITH_YOUR_ISSUING_WEBHOOK_SECRET",
+        "STRIPE_CARD_CURRENCY": "eur",
+        "SUPABASE_URL": "https://YOUR_PROJECT.supabase.co",
+        "SUPABASE_SERVICE_ROLE_KEY": "REPLACE_WITH_YOUR_SERVICE_ROLE_KEY",
+        "MCP_TOKEN_SALT": "REPLACE_WITH_64_HEX_CHARS_FROM_OPENSSL_RAND_HEX_32",
+        "MANAGED_ACCOUNT_ENCRYPTION_KEY": "REPLACE_WITH_64_HEX_CHARS_FROM_OPENSSL_RAND_HEX_32",
+        "SPENDEX_DASHBOARD_URL": "https://app.spendexai.com",
+        "NOTIFY_INTERNAL_TOKEN": "REPLACE_WITH_64_HEX_CHARS_FROM_OPENSSL_RAND_HEX_32"
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "Spendex Pay",
+  "short_name": "Spendex",
+  "description": "The wallet for your AI agent. Install once in Claude Code, Cursor, ChatGPT — your agents sign up and pay for any service within your rules.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070d18",
+  "theme_color": "#070d18",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

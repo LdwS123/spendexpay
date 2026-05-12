@@ -1,0 +1,50 @@
+# Fly.io deployment for the Spendex Pay Streamable HTTP MCP server.
+#
+# Deploy:
+#   fly launch --copy-config --no-deploy   # first time only
+#   fly secrets set SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
+#                   STRIPE_SECRET_KEY=... STRIPE_WEBHOOK_SECRET=... \
+#                   MCP_TOKEN_SALT=...
+#   fly deploy
+#
+# Region choice (cdg = Paris) keeps latency low for EU users and is the
+# closest Fly region to Stripe's EU webhook origins. Bump primary_region
+# or add more [[regions]] entries to expand.
+
+app = "spendex-mcp"
+primary_region = "cdg"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "3001"
+  NODE_ENV = "production"
+  # Real values for SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+  # STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, MCP_TOKEN_SALT,
+  # SPENDEX_DASHBOARD_URL, NOTIFY_INTERNAL_TOKEN, VERCEL_TOKEN,
+  # PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, COINBASE_COMMERCE_API_KEY,
+  # CIRCLE_API_KEY, CIRCLE_TREASURY_WALLET_ID
+  # are set via `fly secrets set …` (NOT here — fly.toml is checked in).
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"
+
+# Single-VM defaults — bump to shared-cpu-2x / 512mb when usage warrants.
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  cpus = 1
+  cpu_kind = "shared"

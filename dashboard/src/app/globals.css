@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-white text-slate-900 antialiased;
+  }
+}
+
+/* Realtime row highlight — fades over ~3s. */
+@keyframes realtime-pulse {
+  0% {
+    background-color: rgba(0, 229, 180, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(0, 229, 180, 0.8);
+  }
+  60% {
+    background-color: rgba(0, 229, 180, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(0, 229, 180, 0.35);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+}
+
+.realtime-flash {
+  animation: realtime-pulse 3s ease-out forwards;
+}
+
+/* Toast slide-in from bottom-right. */
+@keyframes realtime-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.realtime-toast-enter {
+  animation: realtime-toast-in 220ms ease-out both;
+}

@@ -1,0 +1,128 @@
+// Shared tool registration helper used by both the stdio entry point
+// (src/index.ts) and the HTTP entry point (src/http-server.ts).
+//
+// Keeping all `registerXxxTool` calls in one place guarantees the two
+// transports expose the exact same surface area to MCP clients — there is
+// no chance of one transport silently shipping with a different set of
+// tools than the other.
+//
+// Registration order is identical to the original src/index.ts so any MCP
+// client that lists tools sees the same ordering (PRIMARY, then
+// INTROSPECTION, then LEGACY fallback).
+
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import {
+  registerAppResource,
+  RESOURCE_MIME_TYPE,
+} from "@modelcontextprotocol/ext-apps/server";
+import { loadWidgetHtml } from "./widgets.js";
+
+// Primary surface — universal tools agents should reach for first.
+import { registerPayForServiceTool } from "../tools/pay-for-service.js";
+import { registerFetchProductPreviewTool } from "../tools/fetch-product-preview.js";
+import { registerSignupToServiceTool } from "../tools/signup-to-service.js";
+import {
+  registerRequestConsentTool,
+  CONSENT_DIALOG_RESOURCE_URI,
+} from "../tools/request-consent.js";
+import { registerSubmitConsentDecisionTool } from "../tools/submit-consent.js";
+import { registerCheckConsentStatusTool } from "../tools/check-consent-status.js";
+import { registerGetVerificationEmailTool } from "../tools/get-verification-email.js";
+import { registerCompleteSignupTool } from "../tools/complete-signup.js";
+
+// Introspection — agent self-monitoring.
+import { registerCheckBalanceTool } from "../tools/check-balance.js";
+import { registerCheckRulesTool } from "../tools/check-rules.js";
+import { registerListServicesTool } from "../tools/list-services.js";
+
+// Legacy fallbacks — kept for backwards compatibility. Prefer pay_for_service.
+import { registerDeployVercelTool } from "../tools/deploy-vercel.js";
+import { registerDeployRailwayTool } from "../tools/deploy-railway.js";
+import { registerDeployFlyioTool } from "../tools/deploy-flyio.js";
+import { registerDeployRenderTool } from "../tools/deploy-render.js";
+import { registerDeployNetlifyTool } from "../tools/deploy-netlify.js";
+import { registerDeployCloudflareTool } from "../tools/deploy-cloudflare.js";
+import { registerRunModalTool } from "../tools/run-modal.js";
+import { registerRunReplicateTool } from "../tools/run-replicate.js";
+import { registerRunHuggingFaceInferenceTool } from "../tools/run-huggingface-inference.js";
+import { registerSubscribeServiceTool } from "../tools/subscribe-service.js";
+import { registerTopUpServiceTool } from "../tools/top-up-service.js";
+import { registerGenerateGammaTool } from "../tools/generate-gamma.js";
+import { registerProvisionSupabaseProjectTool } from "../tools/provision-supabase-project.js";
+
+/**
+ * Register every Spendex Pay tool + MCP App resource on the given server.
+ *
+ * Order matches src/index.ts: PRIMARY → INTROSPECTION → LEGACY → resources.
+ * Both transports call this helper, so any new tool added here is
+ * automatically available via stdio AND HTTP without further wiring.
+ */
+export function registerAllTools(server: McpServer): void {
+  // ---------------------------------------------------------------------------
+  // PRIMARY: the universal surface. Registered first so MCP clients listing
+  // tools encounter them at the top of the list. pay_for_service and
+  // signup_to_service replace the per-merchant tools below for any new
+  // integration. The consent + email helpers complete the auto-signup flow.
+  // ---------------------------------------------------------------------------
+  registerPayForServiceTool(server);
+  registerFetchProductPreviewTool(server);
+  registerSignupToServiceTool(server);
+  registerRequestConsentTool(server);
+  registerSubmitConsentDecisionTool(server);
+  registerCheckConsentStatusTool(server);
+  registerGetVerificationEmailTool(server);
+  registerCompleteSignupTool(server);
+
+  // ---------------------------------------------------------------------------
+  // INTROSPECTION: state queries an agent runs *before* committing to a charge
+  // (balance, rules, supported services). Never moves money on their own.
+  // ---------------------------------------------------------------------------
+  registerCheckBalanceTool(server);
+  registerCheckRulesTool(server);
+  registerListServicesTool(server);
+
+  // ---------------------------------------------------------------------------
+  // LEGACY FALLBACK: per-merchant tools kept for backwards compatibility.
+  // ---------------------------------------------------------------------------
+  registerDeployVercelTool(server);
+  registerDeployRailwayTool(server);
+  registerDeployFlyioTool(server);
+  registerDeployRenderTool(server);
+  registerDeployNetlifyTool(server);
+  registerDeployCloudflareTool(server);
+  registerRunModalTool(server);
+  registerRunReplicateTool(server);
+  registerRunHuggingFaceInferenceTool(server);
+  registerSubscribeServiceTool(server);
+  registerTopUpServiceTool(server);
+  registerGenerateGammaTool(server);
+  registerProvisionSupabaseProjectTool(server);
+
+  // ---------------------------------------------------------------------------
+  // MCP APP UI RESOURCES: HTML widgets served alongside the tools above. Hosts
+  // that implement the MCP Apps surface render these inline in chat; hosts
+  // that don't simply ignore the `_meta.ui` field declared on the
+  // corresponding tool and fall back to the tool's text output.
+  // ---------------------------------------------------------------------------
+  const consentDialogHtml = loadWidgetHtml("consent-dialog.html");
+  registerAppResource(
+    server,
+    "Spendex Consent Dialog",
+    CONSENT_DIALOG_RESOURCE_URI,
+    {
+      description:
+        "Spendex-branded consent dialog rendered inline when the agent calls " +
+        "request_user_consent. Shows the action, service, amount, current " +
+        "spending rules, and Approve/Decline buttons.",
+    },
+    async () => ({
+      contents: [
+        {
+          uri: CONSENT_DIALOG_RESOURCE_URI,
+          mimeType: RESOURCE_MIME_TYPE,
+          text: consentDialogHtml,
+        },
+      ],
+    })
+  );
+}

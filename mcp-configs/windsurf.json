@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "spendex-pay": {
+      "command": "npx",
+      "args": ["-y", "spendex-pay"],
+      "env": {
+        "STRIPE_SECRET_KEY": "sk_live_YOUR_KEY_HERE",
+        "STRIPE_WEBHOOK_SECRET": "whsec_YOUR_SECRET_HERE",
+        "SUPABASE_URL": "https://YOUR_PROJECT.supabase.co",
+        "SUPABASE_SERVICE_ROLE_KEY": "YOUR_SERVICE_ROLE_KEY",
+        "EMERGENCY_STOP": "false"
+      }
+    }
+  }
+}
