@@ -5,6 +5,7 @@ import SpendingChart from "./SpendingChart";
 import OverviewLiveStats from "./OverviewLiveStats";
 import OnboardingBanner from "./OnboardingBanner";
 import SampleTransactionsToggle from "./SampleTransactionsToggle";
+import AnomalyBanner from "./AnomalyBanner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -321,6 +322,7 @@ export default async function DashboardPage() {
       </header>
 
       <div className="px-4 sm:px-8 py-7 max-w-5xl">
+        <AnomalyBanner />
         <OnboardingBanner
           hasFundingSource={onboarding.hasVirtualCard}
           hasMcpToken={onboarding.hasMcpToken}

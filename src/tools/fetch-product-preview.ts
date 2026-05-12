@@ -141,6 +141,28 @@ const BOT_BLOCK_SIGNATURES: ReadonlyArray<string> = [
   "robot check",
 ];
 
+// Hostname-style strings that some merchants return as the OG title/description
+// when their anti-bot layer serves a generic "decoy" page on HTTP 200. Amazon's
+// is the worst offender — they 200 with title="Amazon", description="Amazon",
+// and a share-icon as og:image. Comparison is case-insensitive on a trimmed
+// value, so we only need lowercase forms here.
+const BAIT_HOSTNAME_TITLES: ReadonlyArray<string> = [
+  "amazon",
+  "walmart",
+  "apple",
+  "target",
+  "best buy",
+  "ebay",
+];
+
+// Image URL substrings that identify a generic merchant share/preview asset
+// rather than a real product photo. Anything containing one of these is the
+// decoy image a merchant serves to bots — never a real listing.
+const BAIT_IMAGE_PATTERNS: ReadonlyArray<string> = [
+  "share-icons/previewdoh",
+  "share/header",
+];
+
 // ---------------------------------------------------------------------------
 // Output shape
 // ---------------------------------------------------------------------------
@@ -538,6 +560,51 @@ function parsePreview(html: string, finalUrl: URL): ProductPreview {
   };
 }
 
+/**
+ * Detect "bait" / decoy responses — HTTP 200 pages that look syntactically
+ * valid but carry placeholder OG content because the merchant's bot wall
+ * silently swapped out the real product page. Amazon is the canonical case:
+ *   <meta property="og:title" content="Amazon">
+ *   <meta property="og:image" content="...share-icons/previewdoh-share...">
+ *   <meta property="og:description" content="Amazon">
+ *
+ * Without this check, the cache (and the consent prompt) would happily show
+ * "Title: Amazon, Image: share-icons/previewdoh-…" which is strictly worse
+ * than the SCRAPING BLOCKED instruction — the agent has no signal that it
+ * needs to scrape via browser tool.
+ */
+function isBaitContent(parsed: ProductPreview): boolean {
+  const titleRaw = parsed.title.trim();
+  const titleLower = titleRaw.toLowerCase();
+
+  // Empty title (after trim) — never a real product.
+  if (titleRaw.length === 0) return true;
+
+  // Title is a bare merchant hostname like "Amazon" or "Best Buy".
+  if (BAIT_HOSTNAME_TITLES.includes(titleLower)) return true;
+
+  // Image URL contains a known decoy/share-icon path.
+  if (parsed.image) {
+    const imgLower = parsed.image.toLowerCase();
+    for (const sig of BAIT_IMAGE_PATTERNS) {
+      if (imgLower.includes(sig)) return true;
+    }
+  }
+
+  // Description repeats the title verbatim (Amazon mirrors "Amazon" into
+  // og:description). Compare trimmed values — the merchant may pad either.
+  if (parsed.description !== null) {
+    const descRaw = parsed.description.trim();
+    const descLower = descRaw.toLowerCase();
+    if (descRaw.length > 0 && descLower === titleLower) return true;
+
+    // Description is itself a bare merchant hostname.
+    if (BAIT_HOSTNAME_TITLES.includes(descLower)) return true;
+  }
+
+  return false;
+}
+
 // ---------------------------------------------------------------------------
 // Response formatting
 // ---------------------------------------------------------------------------
@@ -811,6 +878,32 @@ export function registerFetchProductPreviewTool(server: McpServer): void {
       }
 
       const preview = parsePreview(outcome.body, outcome.finalUrl);
+
+      // Bait-page detection: the merchant returned HTTP 200 with a generic
+      // decoy payload (Amazon's classic share-icon page). Treat it exactly
+      // like a 403/404 bot-block — surface the SCRAPING BLOCKED instruction
+      // so the agent re-scrapes via its browser tool, and DO NOT write the
+      // decoy fields into the cache.
+      if (isBaitContent(preview)) {
+        try {
+          await logTransaction({
+            userId: user.id,
+            service: outcome.finalUrl.hostname,
+            status: "success",
+            amountUsd: 0,
+            description:
+              "Product preview blocked by anti-bot (HTTP 200 decoy page) — agent fallback instruction returned",
+            transactionType: "preview_fetch",
+          });
+        } catch (logErr) {
+          console.error(
+            `[fetch_product_preview] audit log write failed (bait_page) ` +
+            `user=${user.id} url=${outcome.finalUrl.toString()}: ` +
+            `${errorMessage(logErr, "unknown error")}`
+          );
+        }
+        return textResponse(formatScrapingBlockedInstruction(outcome.finalUrl));
+      }
 
       // Write cache row. Numeric price is best-effort: og:price:amount is a
       // string and many sites publish junk like "from $19.99", so we only

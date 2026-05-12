@@ -56,6 +56,7 @@ interface PreferencesWire {
   telegram_chat_id: string | null;
   email_enabled: boolean | null;
   telegram_enabled: boolean | null;
+  push_enabled: boolean | null;
   updated_at?: string | null;
 }
 
@@ -78,6 +79,7 @@ interface PostBody {
   trusted_services?: unknown;
   telegram_chat_id?: unknown;
   telegram_enabled?: unknown;
+  push_enabled?: unknown;
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -101,6 +103,7 @@ function defaults(userId: string): PreferencesWire {
     telegram_chat_id: null,
     email_enabled: true,
     telegram_enabled: false,
+    push_enabled: false,
   };
 }
 
@@ -150,6 +153,7 @@ function rowToWire(row: PreferencesDbRow): PreferencesWire {
     telegram_chat_id: row.telegram_chat_id,
     email_enabled: channels.includes("email"),
     telegram_enabled: channels.includes("telegram"),
+    push_enabled: channels.includes("push"),
     updated_at: row.updated_at ?? null,
   };
 }
@@ -296,10 +300,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     telegramEnabled = body.telegram_enabled;
   }
 
-  // ── Build notification_channels from email_enabled (always on) + telegram
-  // Email is always on per product spec. Telegram is the only user-toggle.
+  // ── Validate push_enabled ────────────────────────────────────────────────
+  let pushEnabled: boolean = false;
+  if (body.push_enabled !== undefined) {
+    if (typeof body.push_enabled !== "boolean") {
+      return NextResponse.json(
+        { error: "push_enabled must be a boolean" },
+        { status: 400 }
+      );
+    }
+    pushEnabled = body.push_enabled;
+  }
+
+  // ── Build notification_channels from email (always on) + telegram + push.
+  // Email is always on per product spec; the other two are user toggles.
   const notificationChannels: string[] = ["email"];
   if (telegramEnabled) notificationChannels.push("telegram");
+  if (pushEnabled) notificationChannels.push("push");
 
   // ── Upsert ───────────────────────────────────────────────────────────────
   let admin: ReturnType<typeof getAdminClient>;

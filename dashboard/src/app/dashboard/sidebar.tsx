@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 const NAV = [
   { label: "Overview",        href: "/dashboard",              d: "M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z" },
   { label: "Transactions",    href: "/dashboard/transactions", d: "M3 4h10M3 8h10M3 12h6" },
+  { label: "Subscriptions",   href: "/dashboard/subscriptions", d: "M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM8 4.5v3.5l2.5 2.5" },
   { label: "Orders",          href: "/dashboard/orders",       d: "M3 5h10l-1 8H4L3 5zM3 5l-.5-2h-1M6 5V3.5a2 2 0 014 0V5" },
   { label: "Funding source",  href: "/dashboard/payments",     d: "M1.5 3.5h13v9h-13zM1.5 6.5h13" },
   { label: "Wallet",          href: "/dashboard/services",     d: "M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM10 8.5l-2.5 4h3.5L8.5 16" },

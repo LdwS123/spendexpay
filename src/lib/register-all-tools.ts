@@ -19,6 +19,9 @@ import { loadWidgetHtml } from "./widgets.js";
 
 // Primary surface — universal tools agents should reach for first.
 import { registerPayForServiceTool } from "../tools/pay-for-service.js";
+import { registerSubscribeService } from "../tools/subscribe-service.js";
+import { registerCancelSubscriptionTool } from "../tools/cancel-subscription.js";
+import { registerListSubscriptionsTool } from "../tools/list-subscriptions.js";
 import { registerFetchProductPreviewTool } from "../tools/fetch-product-preview.js";
 import { registerSignupToServiceTool } from "../tools/signup-to-service.js";
 import {
@@ -34,6 +37,7 @@ import { registerCompleteSignupTool } from "../tools/complete-signup.js";
 import { registerCheckBalanceTool } from "../tools/check-balance.js";
 import { registerCheckRulesTool } from "../tools/check-rules.js";
 import { registerListServicesTool } from "../tools/list-services.js";
+import { registerCheckAnomaliesTool } from "../tools/check-anomalies.js";
 
 // Legacy fallbacks — kept for backwards compatibility. Prefer pay_for_service.
 import { registerDeployVercelTool } from "../tools/deploy-vercel.js";
@@ -65,6 +69,12 @@ export function registerAllTools(server: McpServer): void {
   // integration. The consent + email helpers complete the auto-signup flow.
   // ---------------------------------------------------------------------------
   registerPayForServiceTool(server);
+  // Recurring charges sit right after pay_for_service in the PRIMARY surface
+  // so the universal one-shot + recurring pair show up together when agents
+  // list tools. cancel + list complete the lifecycle.
+  registerSubscribeService(server);
+  registerCancelSubscriptionTool(server);
+  registerListSubscriptionsTool(server);
   registerFetchProductPreviewTool(server);
   registerSignupToServiceTool(server);
   registerRequestConsentTool(server);
@@ -80,6 +90,7 @@ export function registerAllTools(server: McpServer): void {
   registerCheckBalanceTool(server);
   registerCheckRulesTool(server);
   registerListServicesTool(server);
+  registerCheckAnomaliesTool(server);
 
   // ---------------------------------------------------------------------------
   // LEGACY FALLBACK: per-merchant tools kept for backwards compatibility.

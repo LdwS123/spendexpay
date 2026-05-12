@@ -1395,6 +1395,247 @@ export async function recordConsentDecision(params: {
   return mapConsentRequestRow(data as unknown as RawConsentRequestRow);
 }
 
+// ---------------------------------------------------------------------------
+// Subscriptions
+//
+// Recurring charges (Vercel Pro $20/mo, Netflix, Spotify, …) are persisted as
+// `subscriptions` rows. `pay_for_service` is one-shot — these helpers back the
+// `subscribe_service` / `cancel_subscription` / `list_subscriptions` MCP tools
+// and the dashboard /dashboard/subscriptions page. The renewal cron that
+// charges each row on next_charge_at is out of scope for V2 (see CLAUDE.md).
+// ---------------------------------------------------------------------------
+
+export type SubscriptionInterval = "monthly" | "yearly" | "weekly";
+export type SubscriptionStatus =
+  | "active"
+  | "paused"
+  | "cancelled"
+  | "past_due";
+
+export interface SubscriptionRecord {
+  id: string;
+  user_id: string;
+  service: string;
+  amount_usd: number;
+  currency: string;
+  interval: SubscriptionInterval;
+  status: SubscriptionStatus;
+  description: string | null;
+  started_at: string;
+  next_charge_at: string;
+  last_charged_at: string | null;
+  cancelled_at: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface RawSubscriptionRow {
+  id: string;
+  user_id: string;
+  service: string;
+  // numeric(10,2) — Supabase returns these as strings to preserve precision.
+  amount_usd: number | string;
+  currency: string;
+  interval: SubscriptionInterval;
+  status: SubscriptionStatus;
+  description: string | null;
+  started_at: string;
+  next_charge_at: string;
+  last_charged_at: string | null;
+  cancelled_at: string | null;
+  metadata: unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+function mapSubscriptionRow(row: RawSubscriptionRow): SubscriptionRecord {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    service: row.service,
+    amount_usd: typeof row.amount_usd === "string" ? Number(row.amount_usd) : row.amount_usd,
+    currency: row.currency,
+    interval: row.interval,
+    status: row.status,
+    description: row.description,
+    started_at: row.started_at,
+    next_charge_at: row.next_charge_at,
+    last_charged_at: row.last_charged_at,
+    cancelled_at: row.cancelled_at,
+    metadata: asJsonObject(row.metadata),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+const SUBSCRIPTION_SELECT =
+  "id, user_id, service, amount_usd, currency, interval, status, description, " +
+  "started_at, next_charge_at, last_charged_at, cancelled_at, metadata, " +
+  "created_at, updated_at";
+
+/**
+ * Compute the next renewal date by adding one interval to `from`. Used at
+ * creation time and (in V3) by the renewal cron after a successful charge.
+ * UTC arithmetic — daylight-saving shifts must not move the renewal date.
+ */
+export function computeNextChargeAt(
+  from: Date,
+  interval: SubscriptionInterval
+): Date {
+  const next = new Date(from.getTime());
+  switch (interval) {
+    case "weekly":
+      next.setUTCDate(next.getUTCDate() + 7);
+      return next;
+    case "monthly":
+      next.setUTCMonth(next.getUTCMonth() + 1);
+      return next;
+    case "yearly":
+      next.setUTCFullYear(next.getUTCFullYear() + 1);
+      return next;
+  }
+}
+
+interface CreateSubscriptionParams {
+  userId: string;
+  service: string;
+  amountUsd: number;
+  currency?: string;
+  interval: SubscriptionInterval;
+  description?: string;
+  nextChargeAt: Date;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Insert a new active subscription row. Throws on insert failure — the caller
+ * (subscribe_service tool) surfaces that as an infrastructure error rather
+ * than silently confirming a recurring schedule we never persisted.
+ */
+export async function createSubscription(
+  params: CreateSubscriptionParams
+): Promise<SubscriptionRecord> {
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .insert({
+      user_id: params.userId,
+      service: params.service,
+      amount_usd: params.amountUsd,
+      currency: params.currency ?? "USD",
+      interval: params.interval,
+      status: "active" satisfies SubscriptionStatus,
+      description: params.description ?? null,
+      next_charge_at: params.nextChargeAt.toISOString(),
+      metadata: params.metadata ?? null,
+    })
+    .select(SUBSCRIPTION_SELECT)
+    .single();
+
+  if (error || !data) {
+    const message = error?.message ?? "no row returned from insert";
+    console.error(
+      `[db] createSubscription: failed to insert for user ${params.userId} ` +
+      `service "${params.service}": ${message}`
+    );
+    throw new Error(`Failed to create subscription: ${message}`);
+  }
+
+  return mapSubscriptionRow(data as unknown as RawSubscriptionRow);
+}
+
+/**
+ * Fetch a single subscription, scoped to the calling user.
+ *
+ * Returns null for both "not found" and "exists but owned by someone else" —
+ * indistinguishable from the caller's perspective to prevent ID probing.
+ */
+export async function getSubscription(
+  id: string,
+  userId: string
+): Promise<SubscriptionRecord | null> {
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select(SUBSCRIPTION_SELECT)
+    .eq("id", id)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    if (error.code !== "PGRST116") {
+      console.error(
+        `[db] getSubscription: unexpected error (code: ${error.code}): ${error.message}. ` +
+        `id=${id} user=${userId}`
+      );
+    }
+    return null;
+  }
+  if (!data) return null;
+  return mapSubscriptionRow(data as unknown as RawSubscriptionRow);
+}
+
+/**
+ * List all subscriptions for a user. Ordered "active first, then by next
+ * renewal" so the dashboard and `list_subscriptions` MCP tool both surface
+ * the most relevant rows at the top without further client-side sorting.
+ */
+export async function listSubscriptionsForUser(
+  userId: string
+): Promise<SubscriptionRecord[]> {
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select(SUBSCRIPTION_SELECT)
+    .eq("user_id", userId)
+    .order("status", { ascending: true })
+    .order("next_charge_at", { ascending: true });
+
+  if (error) {
+    console.error(
+      `[db] listSubscriptionsForUser: failed for user ${userId}: ` +
+      `${error.message} (code: ${error.code}).`
+    );
+    throw new Error(`Could not load subscriptions: ${error.message}`);
+  }
+
+  const rows = (data ?? []) as unknown as RawSubscriptionRow[];
+  return rows.map(mapSubscriptionRow);
+}
+
+/**
+ * Transition a subscription to 'cancelled'. Idempotent: a row that is already
+ * cancelled is returned unchanged. Returns null for unknown / not-owned rows.
+ *
+ * The CAS filter on `user_id` prevents a stolen subscription ID from being
+ * cancelled by anyone other than the owner — same pattern as the consent
+ * decision flow.
+ */
+export async function cancelSubscription(
+  id: string,
+  userId: string
+): Promise<SubscriptionRecord | null> {
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .update({
+      status: "cancelled" satisfies SubscriptionStatus,
+      cancelled_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select(SUBSCRIPTION_SELECT)
+    .maybeSingle();
+
+  if (error) {
+    console.error(
+      `[db] cancelSubscription: failed for id=${id} user=${userId}: ` +
+      `${error.message} (code: ${error.code}).`
+    );
+    throw new Error(`Failed to cancel subscription: ${error.message}`);
+  }
+
+  if (!data) return null;
+  return mapSubscriptionRow(data as unknown as RawSubscriptionRow);
+}
+
 /**
  * Best-effort transition pending → expired. Returns the updated row on
  * success, or null if the row was already non-pending (someone else

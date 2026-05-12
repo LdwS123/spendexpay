@@ -350,3 +350,83 @@ describe("fetch_product_preview — timeout", () => {
     expect(result.content[0].text).toMatch(/content-type/i);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Bait / decoy detection (HTTP 200 with generic placeholder content)
+// ---------------------------------------------------------------------------
+
+describe("fetch_product_preview — bait page detection", () => {
+  it("treats Amazon decoy (title=Amazon, share-icons image) as bot-blocked", async () => {
+    const html = `
+      <html>
+        <head>
+          <meta property="og:title" content="Amazon" />
+          <meta property="og:image" content="https://m.media-amazon.com/images/G/01/social/share-icons/previewdoh-share-img._CB1198675309_.png" />
+          <meta property="og:description" content="Amazon" />
+        </head>
+        <body></body>
+      </html>
+    `;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(htmlResponse(html)));
+
+    const result = await handler!({
+      url: "https://www.amazon.com/dp/B09XS7JWHH",
+      mcp_token: VALID_TOKEN,
+    });
+    vi.unstubAllGlobals();
+
+    expect(result.isError).toBeUndefined();
+    expect(result.content[0].text).toContain("SCRAPING BLOCKED");
+    expect(result.content[0].text).toContain("www.amazon.com");
+    // Critical: do NOT cache the decoy.
+    expect(vi.mocked(cacheProductPreview)).not.toHaveBeenCalled();
+  });
+
+  it("treats title=hostname + description=hostname as bot-blocked", async () => {
+    const html = `
+      <html>
+        <head>
+          <meta property="og:title" content="Walmart" />
+          <meta property="og:description" content="Walmart" />
+        </head>
+        <body></body>
+      </html>
+    `;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(htmlResponse(html)));
+
+    const result = await handler!({
+      url: "https://www.walmart.com/ip/123456",
+      mcp_token: VALID_TOKEN,
+    });
+    vi.unstubAllGlobals();
+
+    expect(result.isError).toBeUndefined();
+    expect(result.content[0].text).toContain("SCRAPING BLOCKED");
+    expect(vi.mocked(cacheProductPreview)).not.toHaveBeenCalled();
+  });
+
+  it("returns a real PRODUCT PREVIEW when the page carries genuine OG data", async () => {
+    const html = `
+      <html>
+        <head>
+          <meta property="og:title" content="Sony WH-1000XM5" />
+          <meta property="og:image" content="https://m.media-amazon.com/images/I/61yIzVS4r-L._AC_SL1500_.jpg" />
+          <meta property="og:description" content="Industry-leading noise cancellation." />
+        </head>
+      </html>
+    `;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(htmlResponse(html)));
+
+    const result = await handler!({
+      url: "https://www.amazon.com/dp/B09XS7JWHH",
+      mcp_token: VALID_TOKEN,
+    });
+    vi.unstubAllGlobals();
+
+    expect(result.isError).toBeUndefined();
+    expect(result.content[0].text).toContain("PRODUCT PREVIEW");
+    expect(result.content[0].text).toContain("Sony WH-1000XM5");
+    expect(result.content[0].text).not.toContain("SCRAPING BLOCKED");
+    expect(vi.mocked(cacheProductPreview)).toHaveBeenCalledTimes(1);
+  });
+});

@@ -38,6 +38,7 @@ import { timingSafeEqual } from "node:crypto";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { sendConsentEmail } from "@/lib/email";
 import { sendConsentTelegram } from "@/lib/telegram";
+import { sendPushToUser } from "@/lib/push-notify";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -289,6 +290,37 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               `[notify/consent] telegram dispatch threw for chat ${chatId}: ${message}`
             );
             return { channel: "telegram", ok: false, reason: message };
+          })
+      );
+    } else if (channel === "push") {
+      // Web Push: looked up at send time by sendPushToUser. If no
+      // push_subscription is on file the helper returns ok:false with a
+      // descriptive reason — no extra work needed here.
+      const dashboardBase =
+        process.env.SPENDEX_DASHBOARD_URL ??
+        process.env.NEXT_PUBLIC_APP_URL ??
+        "https://app.spendexai.com";
+      const amountText =
+        typeof consent.amount_usd === "number"
+          ? `$${consent.amount_usd.toFixed(2)}`
+          : "an amount";
+      dispatches.push(
+        sendPushToUser(consent.user_id, {
+          title: "Spendex needs your input",
+          body: `Your agent wants to pay ${amountText} on ${consent.service}. Tap to review.`,
+          action_url: `${dashboardBase.replace(/\/$/, "")}/dashboard/consents/${consent.id}`,
+        })
+          .then((r): PerChannelResult => ({
+            channel: "push",
+            ok: r.ok,
+            reason: r.reason,
+          }))
+          .catch((err: unknown): PerChannelResult => {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error(
+              `[notify/consent] push dispatch threw for user ${consent.user_id}: ${message}`
+            );
+            return { channel: "push", ok: false, reason: message };
           })
       );
     } else {

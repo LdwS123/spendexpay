@@ -2,6 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  isPushSupported,
+  getCurrentSubscription,
+  subscribeToPush,
+  unsubscribeFromPush,
+  PushError,
+} from "@/lib/use-push-notifications";
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -21,6 +28,7 @@ interface PreferencesResponse {
   telegram_chat_id?: string | null;
   email_enabled?: boolean | null;
   telegram_enabled?: boolean | null;
+  push_enabled?: boolean | null;
   table_missing?: boolean;
   error?: string;
 }
@@ -47,6 +55,18 @@ export default function ConsentPreferencesPage() {
   const [trusted, setTrusted] = useState<string[]>([]);
   const [telegramEnabled, setTelegramEnabled] = useState<boolean>(false);
   const [telegramChatId, setTelegramChatId] = useState<string>("");
+
+  // ── push notifications ──────────────────────────────────────────────────
+  // `pushEnabled` is the server-side preference (does the user want push?).
+  // `pushSubscribedHere` reflects whether THIS browser is the one holding
+  // an active PushSubscription. They can disagree: a user can have
+  // push_enabled=true server-side after subscribing on their phone, but
+  // pushSubscribedHere=false on their laptop until they toggle here.
+  const [pushSupported, setPushSupported] = useState<boolean>(false);
+  const [pushEnabled, setPushEnabled] = useState<boolean>(false);
+  const [pushSubscribedHere, setPushSubscribedHere] = useState<boolean>(false);
+  const [pushBusy, setPushBusy] = useState<boolean>(false);
+  const [pushError, setPushError] = useState<string | null>(null);
 
   // ── UI state ────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
@@ -80,6 +100,7 @@ export default function ConsentPreferencesPage() {
         }
         setTelegramEnabled(Boolean(body.telegram_enabled));
         if (body.telegram_chat_id) setTelegramChatId(body.telegram_chat_id);
+        setPushEnabled(Boolean(body.push_enabled));
       } catch {
         if (!cancelled) setLoadError("Network error loading preferences.");
       } finally {
@@ -87,6 +108,22 @@ export default function ConsentPreferencesPage() {
       }
     }
     void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Detect Push API support and reconcile with the SW registration on mount.
+  // Effect runs client-side only; useEffect is the right guard against the
+  // SSR pass where `window` is undefined.
+  useEffect(() => {
+    const supported = isPushSupported();
+    setPushSupported(supported);
+    if (!supported) return;
+    let cancelled = false;
+    void getCurrentSubscription().then((sub) => {
+      if (!cancelled) setPushSubscribedHere(Boolean(sub));
+    });
     return () => {
       cancelled = true;
     };
@@ -136,6 +173,7 @@ export default function ConsentPreferencesPage() {
             mode === "auto_for_trusted_services" ? trusted : null,
           telegram_enabled: telegramEnabled,
           telegram_chat_id: telegramChatId.trim() || null,
+          push_enabled: pushEnabled,
         }),
       });
       const body = (await res.json().catch(() => ({}))) as {
@@ -163,6 +201,47 @@ export default function ConsentPreferencesPage() {
     // just save the preferences first so a downstream test endpoint (if it
     // exists) can look up the chat_id. For now we just toast "saved".
     await save();
+  }
+
+  /**
+   * Toggle browser push on/off. We split the two transitions so the UI can
+   * surface precise errors (permission denied vs server rejected). Note:
+   * the user has to click Save afterwards to persist `push_enabled=true`
+   * in their preferences — this handler only handles the *browser* side
+   * (PushManager subscription + POST to /api/push/subscribe).
+   */
+  async function togglePush(next: boolean) {
+    setPushError(null);
+    setPushBusy(true);
+    try {
+      if (next) {
+        await subscribeToPush();
+        setPushSubscribedHere(true);
+        setPushEnabled(true);
+      } else {
+        await unsubscribeFromPush();
+        setPushSubscribedHere(false);
+        setPushEnabled(false);
+      }
+    } catch (err) {
+      if (err instanceof PushError) {
+        const friendly =
+          err.code === "permission_denied"
+            ? "Notifications are blocked. Enable them in your browser's site settings and try again."
+            : err.code === "unsupported"
+            ? "This browser doesn't support push notifications."
+            : err.code === "no_vapid_key"
+            ? "Push notifications aren't configured on this server."
+            : err.message;
+        setPushError(friendly);
+      } else {
+        setPushError(
+          err instanceof Error ? err.message : "Failed to update push setting."
+        );
+      }
+    } finally {
+      setPushBusy(false);
+    }
   }
 
   return (
@@ -328,6 +407,56 @@ export default function ConsentPreferencesPage() {
                 Always on. We email the account address on every consent
                 request.
               </p>
+            </div>
+          </div>
+
+          {/* Browser push */}
+          <div className="rounded-lg border border-slate-100 px-4 py-3">
+            <div className="flex items-start gap-3">
+              <input
+                id="push_enabled"
+                type="checkbox"
+                checked={pushSubscribedHere && pushEnabled}
+                disabled={loading || pushBusy || !pushSupported}
+                onChange={(e) => togglePush(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-[#00e5b4]"
+              />
+              <div className="min-w-0 flex-1">
+                <label
+                  htmlFor="push_enabled"
+                  className="text-sm font-medium text-[#0a1220] cursor-pointer"
+                >
+                  Browser push notifications
+                </label>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Get a tap-to-approve banner when the dashboard tab is open or
+                  installed as a PWA.
+                </p>
+
+                {!pushSupported && (
+                  <p className="mt-2 text-[11px] text-amber-600">
+                    Your browser doesn&apos;t support push notifications. Use a
+                    recent Chrome, Edge, or Firefox. On iOS, add Spendex to your
+                    home screen first.
+                  </p>
+                )}
+
+                {pushSupported && pushSubscribedHere && pushEnabled && (
+                  <p className="mt-2 text-[11px] font-medium text-[#00876a]">
+                    Push notifications enabled on this browser.
+                  </p>
+                )}
+
+                {pushBusy && (
+                  <p className="mt-2 text-[11px] text-slate-400">
+                    Updating push subscription…
+                  </p>
+                )}
+
+                {pushError && (
+                  <p className="mt-2 text-[11px] text-red-600">{pushError}</p>
+                )}
+              </div>
             </div>
           </div>
 
