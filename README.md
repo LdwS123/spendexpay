@@ -9,19 +9,53 @@
 
 # Spendex Pay
 
-**The wallet for your AI agent. Install once in any MCP-compatible agent.**
+> **The agent that lives in your agents.**
+> Install once. Your AI agents can sign up to any service and pay for it — within the rules you set.
 
 [![npm version](https://img.shields.io/npm/v/@spendexai/mcp.svg)](https://www.npmjs.com/package/@spendexai/mcp)
 [![license](https://img.shields.io/npm/l/@spendexai/mcp.svg)](LICENSE)
+[![tests](https://img.shields.io/badge/tests-322%20passing-00e5b4.svg)](#)
 [![node](https://img.shields.io/node/v/@spendexai/mcp.svg)](package.json)
 
 ---
 
-## What is Spendex Pay?
+## The wall every AI agent hits
 
-Spendex Pay is an MCP server. You install it once in your agent — Claude Code, Cursor, Claude Desktop, claude.ai web, ChatGPT, or any host that speaks the Model Context Protocol — and from then on your agent has **identity** (it can sign up for the services it needs) and a **wallet** (a Stripe Issuing virtual card that pays for them, enforced by spending rules at the card level).
+You're coding with Claude Code at 2am. You ask it to deploy your app to production.
+Vercel says: *"Free tier exceeded. Upgrade to Pro for $20/month."*
 
-You manage one relationship: with Spendex. Spendex manages every relationship with the services your agent uses. The user never has to log in to vercel.com, openai.com, modal.com directly. Set the rules once on the dashboard — per-transaction caps, monthly budget, allowed merchants — and your agent operates inside that envelope autonomously.
+Your agent stops. You sigh. You sign in to vercel.com, find your card, type the numbers,
+come back. You've lost five minutes — and you've lost the flow.
+
+**This happens every time your agent needs to:**
+
+- Deploy on Vercel after the free tier (€20/mo) — *agent stops, you upgrade manually*
+- Top up Modal GPU credits (€50) — *agent stops, you go to modal.com*
+- Spin up an OpenAI API key (€10) — *agent stops, you create the account*
+- Buy something on Amazon (€89) — *agent stops, you type your card*
+
+**Spendex Pay removes the wall.** Install once in your agent (Claude Code, Cursor,
+ChatGPT, Cowork, or any MCP host). Configure your spending rules once. From then on,
+your agent has:
+
+- 🪪 **Identity** — it can sign up for new services on your behalf, with your explicit consent
+- 💳 **Wallet** — a Stripe Issuing virtual card pays for everything, within the limits you set
+- 🛡️ **Rules** — per-transaction caps, monthly budget, allowed merchants — enforced by Stripe in <2s, not by application code
+
+You manage **one** relationship: with Spendex.
+Spendex manages every relationship with every service your agent ever touches.
+
+---
+
+## Three phases of agent commerce
+
+| Phase | When | Who | Connected services |
+|---|---|---|---|
+| **Now** | 2026 | Developers using coding agents (Claude Code, Cursor, Codex) | Vercel, OpenAI, Anthropic, Modal, GitHub, Cloudflare |
+| **Next** | 2027 | Consumers using personal agents (Cowork, ChatGPT, OpenClaw) | Netflix, Spotify, Uber, Airbnb, Amazon |
+| **Eventually** | 2028+ | Agents themselves are the customers — companies issue Spendex accounts to their AI workers with budget caps | the entire agent economy |
+
+We start where the pain is sharpest: developers. We expand wherever an agent needs a wallet.
 
 ---
 
