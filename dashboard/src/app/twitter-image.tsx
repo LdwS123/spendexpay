@@ -17,8 +17,9 @@ export default function TwitterImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "80px 96px",
-          background:
-            "radial-gradient(circle at 80% 20%, rgba(0,229,180,0.18) 0%, rgba(0,229,180,0) 55%), radial-gradient(circle at 10% 90%, rgba(0,229,180,0.10) 0%, rgba(0,229,180,0) 50%), #070d18",
+          backgroundColor: "#070d18",
+          backgroundImage:
+            "radial-gradient(circle at 80% 20%, rgba(0,229,180,0.18) 0%, rgba(0,229,180,0) 55%), radial-gradient(circle at 10% 90%, rgba(0,229,180,0.10) 0%, rgba(0,229,180,0) 50%)",
           fontFamily: "system-ui, -apple-system, sans-serif",
         }}
       >

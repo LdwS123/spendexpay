@@ -15,7 +15,10 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import dotenv from "dotenv";
 const __dirname = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: resolve(__dirname, "../.env") });
+// quiet: true is critical — dotenv prints a banner to stdout by default, which
+// corrupts the JSON-RPC framing on the stdio transport. The MCP protocol uses
+// stdout exclusively; nothing else may write a single byte there before connect.
+dotenv.config({ path: resolve(__dirname, "../.env"), quiet: true });
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";

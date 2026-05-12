@@ -244,3 +244,75 @@ These are known gaps, not forgotten items:
 | Webhook handlers for PayPal, Circle, Coinbase | Stubs exist in `src/lib/webhooks/` but are not implemented. Only the Stripe webhook (`dashboard/app/api/webhooks/stripe`) is real. |
 | Modal GPU, Fly.io, and other service tools | Only `deploy_to_vercel` exists. All other services are roadmap. |
 | Rate limit persistence | The token bucket is in-memory. Server restarts reset all rate limit counters. This is fine for now but will need a Redis or DB-backed store before multi-process deployment. |
+
+---
+
+## Recent changes
+
+The vision and codebase shifted meaningfully in the last cycle. If you're picking this up fresh, read this section first — it explains why some older docs (and older parts of this file) talk about the project differently.
+
+### The pitch pivot — wallet → identity + wallet
+
+Spendex started as "a wallet your agent can spend from." It is now "**the agent that lives in your agents**" — a unified identity broker *and* wallet. The user has **one** relationship: with Spendex. Spendex has all the relationships with downstream services (Vercel, OpenAI, Modal, GitHub, Netflix tomorrow, Amazon eventually).
+
+That pivot drove three concrete code changes:
+
+1. **Universal `pay_for_service` and `signup_to_service` replaced the per-merchant tool surface.** The legacy `deploy_to_*` and `run_*` tools still work, but they're flagged as fallback. Build new things on the universal surface.
+2. **The identity broker is now a first-class brick.** `signup_to_service`, `get_verification_email`, and `complete_signup` together let an agent create accounts on behalf of the user — with explicit consent, AES-256-GCM-encrypted credentials, and an alias inbox at `signup-<hash>@mail.spendexai.com`.
+3. **Consent moved inline.** `request_user_consent` returns both a markdown prompt and an MCP Apps SDK widget. Hosts that support the Apps surface render an inline Approve / Decline dialog; hosts that don't get a markdown fallback. The hybrid pattern is non-negotiable — do not break it.
+
+### Database — 6 migrations shipped
+
+The migrations under `supabase/migrations/` (and `supabase/migration.sql` for the consolidated bundle) cover:
+
+| Migration | Tables / changes |
+|---|---|
+| 001 — initial schema | `users`, `mcp_tokens`, `payment_intents`, `audit_log` |
+| 002 — RLS policies | Row-level security on every user-owned table |
+| 003 — Stripe Issuing | `stripe_customers`, `issuing_cards`, `issuing_authorizations` |
+| 004 — Identity broker | `managed_accounts` (encrypted creds), `email_aliases`, `verification_emails` |
+| 005 — Consent | `consent_requests`, `consent_decisions`, `consent_preferences` |
+| 006 — Rules and trust | `spending_rules`, `service_trust`, `mcc_policy` |
+
+Apply with `supabase db push` or the consolidated `supabase/migration.sql`.
+
+### Test count
+
+322 Vitest tests, all green on Node 20. The `npm test` line is the source of truth — if you see a different number elsewhere, it's stale.
+
+---
+
+## Where things live
+
+When you need to make a change, the answer to "which folder?" is usually one of these:
+
+| Type of change | Where | Example file |
+|---|---|---|
+| New MCP tool | `src/tools/{name}.ts` | `src/tools/pay-for-service.ts` |
+| Register a tool with the server | `src/lib/register-all-tools.ts` | (single registry — stdio and HTTP share it) |
+| New payment provider adapter | `src/lib/payments/{provider}.ts` | `src/lib/payments/stripe.ts` |
+| Payment dispatch logic | `src/lib/payments/router.ts` | `routePayment()` |
+| New webhook (incoming) | `src/lib/webhooks/{provider}.ts` | `src/lib/webhooks/stripe.ts` |
+| Dashboard page | `dashboard/src/app/dashboard/{route}/page.tsx` | `dashboard/src/app/dashboard/transactions/page.tsx` |
+| Dashboard API route | `dashboard/src/app/api/{route}/route.ts` | `dashboard/src/app/api/webhooks/stripe/route.ts` |
+| DB schema change | `supabase/migrations/{NNN_name}.sql` | `006_rules_and_trust.sql` |
+| Consent widget UI | `src/lib/consent/widget.ts` + dashboard `/dashboard/consents` | (hybrid: server returns MCP App resource, dashboard mirrors it) |
+| New env var | `.env.example` (with comment) + `src/config.ts` (validation) | |
+| Tests | `src/tests/{matching-file}.test.ts` | `src/tests/payment-router.test.ts` |
+| CI workflow | `.github/workflows/{name}.yml` | `.github/workflows/deploy-fly.yml` |
+
+---
+
+## Do NOT do
+
+Things that look like reasonable improvements but will silently break Spendex. Future Claudes: read this list before touching anything load-bearing.
+
+- **Do NOT re-implement the legacy `deploy_to_*` / `run_*` tools.** They are deliberately frozen. Anything new goes through `pay_for_service` and `signup_to_service`. Adding a new sibling to the legacy section creates a parallel API surface that drifts from the universal one.
+- **Do NOT break the `_meta.ui` hybrid widget pattern in consent tools.** `request_user_consent` returns both a structured `_meta.ui` resource (for hosts with the MCP Apps SDK) and a markdown prompt (for hosts without). Removing either breaks half the supported hosts. If you change the schema, change both.
+- **Do NOT log secrets anywhere.** Not card numbers, not CVCs, not `STRIPE_SECRET_KEY`, not `SPENDEX_TOKEN`, not raw passwords. Not stdout, not stderr, not Sentry, not analytics. This applies even to "just this once for debugging" — use ephemeral local logs that never leave the machine.
+- **Do NOT write to `stdout` from anywhere in the MCP server process.** Stdout is the JSON-RPC channel. A single stray byte corrupts the protocol framing. All debug output goes to `console.error` (stderr). `console.log` is effectively banned in `src/`.
+- **Do NOT cache the `EMERGENCY_STOP` value.** It's a getter in `config.ts` for a reason — operators must be able to halt payments by flipping an env var, with no restart. If you cache it, you defeat the kill switch.
+- **Do NOT skip the idempotency key timestamp.** The format is `{userId}-{service}-{projectName}-{Date.now()}`. The millisecond timestamp is deliberate — Stripe caches results for 24 hours and a missing timestamp turns every retry into a replay of the original failure.
+- **Do NOT auto-charge above the user's `max_amount`.** Surface an error and stop. Do not prompt inline as a workaround — async payments exist precisely because there's no human to prompt.
+- **Do NOT silently swallow audit-log write failures after a successful charge.** If Stripe took the money and the DB write failed, the tool must throw. The user has to know their charge is unrecorded — silent failure makes dispute resolution impossible.
+- **Do NOT add a new transport without updating `registerAllTools()`.** stdio (`src/index.ts`) and HTTP (`src/http-server.ts`) both call the same registry. If you add a third transport, it goes through the same registry so the tool surface stays in lockstep.

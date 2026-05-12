@@ -15,6 +15,9 @@ build/
 .env.*
 !.env.example
 !.env.*.example
+.secrets
+.secrets.*
+!.secrets.example
 
 # MCP local config — contains real Stripe/Supabase keys, must stay local
 .mcp.json
