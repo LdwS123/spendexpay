@@ -138,6 +138,8 @@ function aggregatedRule(overrides: Partial<SpendexRule> = {}): SpendexRule {
     monthly_budget_usd: 500,
     allowed_services: null,
     blocked_services: null,
+    per_service_monthly_cap_usd: null,
+    per_service_per_tx_cap_usd: null,
     active: true,
     ...overrides,
   };

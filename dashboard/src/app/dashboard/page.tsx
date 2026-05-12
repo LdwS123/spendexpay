@@ -3,6 +3,8 @@ import { getAdminClient } from "@/lib/supabase";
 import Link from "next/link";
 import SpendingChart from "./SpendingChart";
 import OverviewLiveStats from "./OverviewLiveStats";
+import OnboardingBanner from "./OnboardingBanner";
+import SampleTransactionsToggle from "./SampleTransactionsToggle";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -232,6 +234,56 @@ async function getPendingConsentCount(userId: string): Promise<number> {
   }
 }
 
+interface OnboardingState {
+  hasMcpToken: boolean;
+  hasVirtualCard: boolean;
+}
+
+async function getOnboardingState(userId: string): Promise<OnboardingState> {
+  // Gracefully handle every failure path: missing table, missing column,
+  // dev mode with no credentials. We never want this widget to 500 the
+  // entire Overview page.
+  let client: ReturnType<typeof getAdminClient>;
+  try {
+    client = getAdminClient();
+  } catch {
+    return { hasMcpToken: false, hasVirtualCard: false };
+  }
+
+  let hasMcpToken = false;
+  let hasVirtualCard = false;
+
+  try {
+    const { data, error } = await client
+      .from("users")
+      .select("mcp_token")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!error && data) {
+      hasMcpToken = data.mcp_token !== null && data.mcp_token !== undefined;
+    }
+  } catch (err) {
+    console.error("[dashboard] onboarding mcp_token check failed:", err);
+  }
+
+  try {
+    const { count, error } = await client
+      .from("virtual_cards")
+      .select("user_id", { count: "exact", head: true })
+      .eq("user_id", userId);
+    if (!error) {
+      hasVirtualCard = (count ?? 0) > 0;
+    } else if (error.code !== "42P01") {
+      // 42P01 = table missing — render as "no card" rather than 500.
+      console.error("[dashboard] virtual_cards count error:", error);
+    }
+  } catch (err) {
+    console.error("[dashboard] virtual_cards check failed:", err);
+  }
+
+  return { hasMcpToken, hasVirtualCard };
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const {
@@ -241,9 +293,10 @@ export default async function DashboardPage() {
   // Layout already redirects if no user, but guard here for type safety
   if (!user) return null;
 
-  const [data, pendingConsents] = await Promise.all([
+  const [data, pendingConsents, onboarding] = await Promise.all([
     getSpendingData(user.id),
     getPendingConsentCount(user.id),
+    getOnboardingState(user.id),
   ]);
 
   const currentMonth = new Date().toLocaleDateString("en-GB", {
@@ -268,6 +321,10 @@ export default async function DashboardPage() {
       </header>
 
       <div className="px-4 sm:px-8 py-7 max-w-5xl">
+        <OnboardingBanner
+          hasFundingSource={onboarding.hasVirtualCard}
+          hasMcpToken={onboarding.hasMcpToken}
+        />
         {pendingConsents > 0 && (
           <Link
             href="/dashboard/consents"
@@ -375,6 +432,20 @@ export default async function DashboardPage() {
                 </p>
               </div>
             </div>
+
+            {onboarding.hasVirtualCard && (
+              <section className="mt-7">
+                <div className="mb-3">
+                  <h2 className="text-sm font-semibold text-[#0a1220]">
+                    Recent activity
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    A preview of how your agent&apos;s spending will appear here.
+                  </p>
+                </div>
+                <SampleTransactionsToggle />
+              </section>
+            )}
           </>
         ) : (
           // ── Real data view ──────────────────────────────────────────────

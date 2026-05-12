@@ -273,32 +273,69 @@ export default function TransactionsClient({
   );
 
   if (transactions.length === 0) {
+    // When a filter is active, we keep the original light empty state — the
+    // user already has transactions, they just don't match this filter.
+    if (statusFilter) {
+      return (
+        <>
+          <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-4">
+                <svg
+                  className="w-5 h-5 text-slate-300"
+                  fill="none"
+                  viewBox="0 0 16 16"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                >
+                  <path d="M3 2h10v12l-2-1.5-2 1.5-2-1.5L5 14 3 14V2z" strokeLinejoin="round" />
+                  <line x1="5.5" y1="6" x2="10.5" y2="6" />
+                  <line x1="5.5" y1="9" x2="8.5" y2="9" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-slate-600">
+                No {statusFilter} transactions
+              </p>
+              <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">
+                Try a different filter to see other transactions.
+              </p>
+            </div>
+          </div>
+          <RealtimeToastStack toasts={toasts} onDismiss={dismiss} />
+        </>
+      );
+    }
+
+    // No filter + no transactions ever → big onboarding empty state.
     return (
       <>
         <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-4">
-              <svg
-                className="w-5 h-5 text-slate-300"
-                fill="none"
-                viewBox="0 0 16 16"
-                stroke="currentColor"
-                strokeWidth={1.5}
-                aria-hidden="true"
-              >
-                <path d="M3 2h10v12l-2-1.5-2 1.5-2-1.5L5 14 3 14V2z" strokeLinejoin="round" />
-                <line x1="5.5" y1="6" x2="10.5" y2="6" />
-                <line x1="5.5" y1="9" x2="8.5" y2="9" />
-              </svg>
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div className="text-5xl mb-4" aria-hidden="true">
+              📊
             </div>
-            <p className="text-sm font-medium text-slate-600">
-              {statusFilter ? `No ${statusFilter} transactions` : "No transactions yet"}
+            <p className="text-base font-semibold text-[#0a1220]">
+              No transactions yet
             </p>
-            <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">
-              {statusFilter
-                ? "Try a different filter to see other transactions."
-                : "Charges will appear here the first time your agent calls a Spendex Pay tool."}
+            <p className="text-sm text-slate-500 mt-1.5 max-w-sm leading-relaxed">
+              When your agent makes a payment, it&apos;ll appear here in real
+              time.
             </p>
+
+            {/* Install snippet — same visual language as the Overview page. */}
+            <div className="mt-6 w-full max-w-md rounded-lg bg-[#070d18] px-4 py-3 text-left">
+              <pre className="font-mono text-[13px] leading-relaxed text-white whitespace-pre-wrap break-all">
+                <span className="text-[#00e5b4]">$</span> claude mcp add spendex
+              </pre>
+            </div>
+
+            <Link
+              href="/docs"
+              className="inline-flex items-center gap-1 mt-5 text-xs font-semibold text-[#00c49a] hover:text-[#00a882] transition-colors"
+            >
+              View install docs →
+            </Link>
           </div>
         </div>
         <RealtimeToastStack toasts={toasts} onDismiss={dismiss} />

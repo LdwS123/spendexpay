@@ -9,7 +9,28 @@ interface RulesPayload {
   monthly_budget: number;
   allowed_services: string[] | null;
   blocked_services: string[] | null;
+  per_service_limits: PerServiceLimit[];
 }
+
+interface PerServiceLimit {
+  service: string;
+  monthly_cap_usd?: number | null;
+  per_tx_cap_usd?: number | null;
+  blocked?: boolean;
+}
+
+// Curated list of merchants users most often want caps for. The "+" labels
+// double as the inline icons; keeping them as text emoji avoids dragging in
+// an icon set just for this page.
+const COMMON_SERVICES: ReadonlyArray<{ slug: string; label: string; icon: string }> = [
+  { slug: "vercel", label: "Vercel", icon: "▲" },
+  { slug: "modal", label: "Modal", icon: "⚡" },
+  { slug: "openai", label: "OpenAI", icon: "✨" },
+  { slug: "anthropic", label: "Anthropic", icon: "✦" },
+  { slug: "amazon", label: "Amazon", icon: "📦" },
+  { slug: "github", label: "GitHub", icon: "⌥" },
+  { slug: "cloudflare", label: "Cloudflare", icon: "☁" },
+];
 
 // ─── MCC catalogue ────────────────────────────────────────────────────────────
 // Mirrors ALLOWED_MCCS in src/lib/stripe-issuing.ts. These are the categories
@@ -51,6 +72,12 @@ export default function RulesPage() {
   const [blockedMerchants, setBlockedMerchants] = useState<string[]>([]);
   const [merchantDraft, setMerchantDraft] = useState("");
 
+  // ── Per-service limits state ─────────────────────────────────────────
+  // Keyed by service slug for O(1) updates from the UI. Re-serialized into
+  // an array shape on save / from the API on load.
+  const [perServiceLimits, setPerServiceLimits] = useState<Record<string, PerServiceLimit>>({});
+  const [customServiceDraft, setCustomServiceDraft] = useState("");
+
   // Stable ids for label/input association — required for screen readers
   // to announce the field name when the input receives focus.
   const perTxId = useId();
@@ -79,6 +106,7 @@ export default function RulesPage() {
           monthly_budget: number | null;
           allowed_services: string[] | null;
           blocked_services: string[] | null;
+          per_service_limits?: PerServiceLimit[];
         };
 
         if (cancelled) return;
@@ -91,6 +119,13 @@ export default function RulesPage() {
         }
         if (Array.isArray(data.blocked_services)) {
           setBlockedMerchants(data.blocked_services);
+        }
+        if (Array.isArray(data.per_service_limits)) {
+          const map: Record<string, PerServiceLimit> = {};
+          for (const entry of data.per_service_limits) {
+            map[entry.service.toLowerCase()] = entry;
+          }
+          setPerServiceLimits(map);
         }
       } catch (err) {
         if (!cancelled) {
@@ -123,9 +158,74 @@ export default function RulesPage() {
     setBlockedMerchants((prev) => prev.filter((m) => m !== name));
   }
 
+  // ── Per-service helpers ───────────────────────────────────────────────
+  // All updates flow through the same setter so the keyed Record stays in
+  // sync with the lower-case slug we send to the API.
+
+  function setPerServiceField(
+    service: string,
+    field: "monthly_cap_usd" | "per_tx_cap_usd",
+    rawValue: string
+  ) {
+    const slug = service.toLowerCase();
+    setPerServiceLimits((prev) => {
+      const next: PerServiceLimit = { ...(prev[slug] ?? { service: slug }) };
+      const parsed = parseFloat(rawValue);
+      if (rawValue === "" || !Number.isFinite(parsed) || parsed <= 0) {
+        next[field] = null;
+      } else {
+        next[field] = parsed;
+      }
+      return { ...prev, [slug]: next };
+    });
+  }
+
+  function togglePerServiceBlocked(service: string) {
+    const slug = service.toLowerCase();
+    setPerServiceLimits((prev) => {
+      const current = prev[slug] ?? { service: slug };
+      return { ...prev, [slug]: { ...current, blocked: !current.blocked } };
+    });
+  }
+
+  function addCustomPerService() {
+    const slug = customServiceDraft.trim().toLowerCase();
+    if (!slug) return;
+    setPerServiceLimits((prev) => {
+      if (prev[slug]) return prev; // already configured
+      return { ...prev, [slug]: { service: slug } };
+    });
+    setCustomServiceDraft("");
+  }
+
+  function removePerService(service: string) {
+    const slug = service.toLowerCase();
+    setPerServiceLimits((prev) => {
+      const next = { ...prev };
+      delete next[slug];
+      return next;
+    });
+  }
+
   async function save() {
     setSaveState("saving");
     setSaveError(null);
+
+    // Strip empty entries: an entry with no caps and not blocked is a no-op,
+    // and persisting it would just clutter the DB.
+    const perServiceArray: PerServiceLimit[] = Object.values(perServiceLimits).filter(
+      (entry) => {
+        const hasMonthly =
+          entry.monthly_cap_usd !== undefined &&
+          entry.monthly_cap_usd !== null &&
+          entry.monthly_cap_usd > 0;
+        const hasPerTx =
+          entry.per_tx_cap_usd !== undefined &&
+          entry.per_tx_cap_usd !== null &&
+          entry.per_tx_cap_usd > 0;
+        return hasMonthly || hasPerTx || entry.blocked === true;
+      }
+    );
 
     const payload: RulesPayload = {
       max_auto_charge_usd: Math.max(0, parseFloat(perTx) || 0),
@@ -134,6 +234,7 @@ export default function RulesPage() {
       // enforced at the card level (Stripe Issuing), not via this rule.
       allowed_services: null,
       blocked_services: blockedMerchants.length > 0 ? blockedMerchants : null,
+      per_service_limits: perServiceArray,
     };
 
     try {
@@ -303,6 +404,157 @@ export default function RulesPage() {
                 placeholder="Custom amount"
                 className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-400"
               />
+            </div>
+          </section>
+
+          {/* ── Per-service limits ─────────────────────────────────────── */}
+          <section className="border-t border-slate-50 pt-5">
+            <label className="block text-sm font-semibold text-[#070d18] mb-1">
+              Per-service limits
+            </label>
+            <p className="text-xs text-slate-500 mb-3">
+              Layer tighter limits on top of the global caps for specific services
+              (e.g. {CURRENCY_SYMBOL}20/month on Vercel, {CURRENCY_SYMBOL}200/month on Modal,
+              blocked on Netflix). Leave blank to inherit the global rules.
+            </p>
+
+            <div className="rounded-lg border border-slate-100 divide-y divide-slate-100">
+              {/* Render every common service plus any custom service the
+                  user has added. Custom entries that are not in the curated
+                  list get a placeholder label derived from their slug. */}
+              {(() => {
+                const customSlugs = Object.keys(perServiceLimits).filter(
+                  (slug) => !COMMON_SERVICES.some((s) => s.slug === slug)
+                );
+                const rows = [
+                  ...COMMON_SERVICES.map((s) => ({ ...s, isCustom: false })),
+                  ...customSlugs.map((slug) => ({
+                    slug,
+                    label: slug.charAt(0).toUpperCase() + slug.slice(1),
+                    icon: "•",
+                    isCustom: true,
+                  })),
+                ];
+                return rows.map((row) => {
+                  const entry = perServiceLimits[row.slug];
+                  const monthly =
+                    entry?.monthly_cap_usd !== undefined &&
+                    entry?.monthly_cap_usd !== null
+                      ? String(entry.monthly_cap_usd)
+                      : "";
+                  const perTxCap =
+                    entry?.per_tx_cap_usd !== undefined &&
+                    entry?.per_tx_cap_usd !== null
+                      ? String(entry.per_tx_cap_usd)
+                      : "";
+                  const blocked = entry?.blocked === true;
+                  return (
+                    <div
+                      key={row.slug}
+                      className="flex flex-col sm:flex-row sm:items-center gap-3 px-3 py-3"
+                    >
+                      <div className="flex items-center gap-2 min-w-[120px]">
+                        <span aria-hidden="true" className="text-base">
+                          {row.icon}
+                        </span>
+                        <span className="text-sm font-medium text-[#070d18]">
+                          {row.label}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 flex-1">
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                            {CURRENCY_SYMBOL}
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            disabled={loading || blocked}
+                            value={monthly}
+                            onChange={(e) =>
+                              setPerServiceField(row.slug, "monthly_cap_usd", e.target.value)
+                            }
+                            placeholder="Monthly cap"
+                            aria-label={`${row.label} monthly cap`}
+                            className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-400"
+                          />
+                        </div>
+
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                            {CURRENCY_SYMBOL}
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            disabled={loading || blocked}
+                            value={perTxCap}
+                            onChange={(e) =>
+                              setPerServiceField(row.slug, "per_tx_cap_usd", e.target.value)
+                            }
+                            placeholder="Per-tx cap"
+                            aria-label={`${row.label} per-transaction cap`}
+                            className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-400"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() => togglePerServiceBlocked(row.slug)}
+                          aria-pressed={blocked}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                            blocked
+                              ? "bg-red-50 border-red-200 text-red-700"
+                              : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                          }`}
+                        >
+                          {blocked ? "Blocked" : "Block"}
+                        </button>
+
+                        {row.isCustom && (
+                          <button
+                            type="button"
+                            onClick={() => removePerService(row.slug)}
+                            aria-label={`Remove ${row.label}`}
+                            className="px-2 py-1.5 rounded-lg text-xs text-slate-400 hover:text-red-500 transition-colors"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Add custom service (anything not in the curated list above). */}
+            <div className="flex gap-2 mt-3">
+              <input
+                type="text"
+                disabled={loading}
+                value={customServiceDraft}
+                onChange={(e) => setCustomServiceDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCustomPerService();
+                  }
+                }}
+                placeholder="Add custom service (e.g. heroku)"
+                aria-label="Add custom service"
+                className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-400"
+              />
+              <button
+                type="button"
+                disabled={loading || customServiceDraft.trim() === ""}
+                onClick={addCustomPerService}
+                className="px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 text-[#070d18] hover:border-[#00e5b4] hover:text-[#00876a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add
+              </button>
             </div>
           </section>
 

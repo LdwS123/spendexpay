@@ -362,6 +362,8 @@ describe("registerPayForServiceTool — per-transaction cap exceeded", () => {
         monthly_budget_usd: null,
         allowed_services: null,
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);
@@ -388,6 +390,8 @@ describe("registerPayForServiceTool — monthly budget exceeded", () => {
         monthly_budget_usd: 50,
         allowed_services: null,
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);
@@ -420,6 +424,8 @@ describe("registerPayForServiceTool — blocked merchants", () => {
         monthly_budget_usd: null,
         allowed_services: null,
         blocked_services: ["vercel"],
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);
@@ -440,6 +446,8 @@ describe("registerPayForServiceTool — blocked merchants", () => {
         monthly_budget_usd: null,
         allowed_services: ["modal", "openai"],
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);

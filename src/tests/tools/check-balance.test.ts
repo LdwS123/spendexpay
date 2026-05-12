@@ -148,6 +148,8 @@ describe("registerCheckBalanceTool — with monthly budget rule", () => {
         monthly_budget_usd: 100,
         allowed_services: null,
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);
@@ -171,6 +173,8 @@ describe("registerCheckBalanceTool — rule per-tx cap overrides user cap when l
         monthly_budget_usd: null,
         allowed_services: null,
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);
@@ -191,6 +195,8 @@ describe("registerCheckBalanceTool — service-scoped rules ignored", () => {
         monthly_budget_usd: 20,
         allowed_services: null,
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);

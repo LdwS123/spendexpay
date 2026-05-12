@@ -367,6 +367,99 @@ async function handleAuthorizationRequest(
     }
   }
 
+  // Step 7: Per-service caps (use case V2 #5.2).
+  //
+  // When the merchant maps to a known service slug (e.g. "vercel", "modal"),
+  // honor any per_service_monthly_cap / per_service_per_tx_cap rule the user
+  // has set for that exact service. Each rule_type lives in its own row so
+  // we filter by slug after fetching the rules array — the partial index on
+  // params->>'service' from migration 008 keeps this cheap.
+  const merchantSlug = merchantCtx.serviceSlug;
+  if (merchantSlug && merchantSlug !== "unknown") {
+    for (const rule of rules) {
+      if (
+        rule.rule_type !== "per_service_monthly_cap" &&
+        rule.rule_type !== "per_service_per_tx_cap"
+      ) {
+        continue;
+      }
+      const ruleService = typeof rule.params.service === "string" ? rule.params.service.toLowerCase() : null;
+      if (ruleService !== merchantSlug.toLowerCase()) continue;
+
+      // Hard block: either rule type can carry blocked=true to deny the
+      // service outright without needing a cap.
+      if (rule.params.blocked === true) {
+        console.error(
+          `[webhook/stripe-issuing] Per-service block: ` +
+          `auth_id="${authId}" service="${merchantSlug}" user_id="${user.id}". Declining.`
+        );
+        await declineAuthorization(authId, user.id, cardId, amountUsd, merchantCtx, "per_service_blocked");
+        return;
+      }
+
+      if (
+        rule.rule_type === "per_service_per_tx_cap" &&
+        typeof rule.params.per_tx_cap_usd === "number" &&
+        amountUsd > rule.params.per_tx_cap_usd
+      ) {
+        console.error(
+          `[webhook/stripe-issuing] Per-service per-tx cap exceeded: ` +
+          `auth_id="${authId}" service="${merchantSlug}" ` +
+          `amount=$${amountUsd.toFixed(2)} cap=$${rule.params.per_tx_cap_usd.toFixed(2)} ` +
+          `user_id="${user.id}". Declining.`
+        );
+        await declineAuthorization(
+          authId,
+          user.id,
+          cardId,
+          amountUsd,
+          merchantCtx,
+          "per_service_per_tx_cap_exceeded"
+        );
+        return;
+      }
+
+      if (
+        rule.rule_type === "per_service_monthly_cap" &&
+        typeof rule.params.monthly_cap_usd === "number"
+      ) {
+        // Spend lookup is scoped to this merchant slug — same SQL as the
+        // global monthly check but filtered to audit_logs.service = slug.
+        let serviceSpend = 0;
+        try {
+          serviceSpend = await fetchMonthlySpendForService(user.id, merchantSlug);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.error(
+            `[webhook/stripe-issuing] Failed to fetch per-service spend for ` +
+            `user_id="${user.id}" service="${merchantSlug}": ${message}. ` +
+            `Declining auth_id="${authId}" for safety.`
+          );
+          await declineAuthorization(authId, user.id, cardId, amountUsd, merchantCtx, "db_error");
+          return;
+        }
+
+        if (serviceSpend + amountUsd > rule.params.monthly_cap_usd) {
+          console.error(
+            `[webhook/stripe-issuing] Per-service monthly cap exceeded: ` +
+            `auth_id="${authId}" service="${merchantSlug}" ` +
+            `amount=$${amountUsd.toFixed(2)} month_to_date=$${serviceSpend.toFixed(2)} ` +
+            `cap=$${rule.params.monthly_cap_usd.toFixed(2)} user_id="${user.id}". Declining.`
+          );
+          await declineAuthorization(
+            authId,
+            user.id,
+            cardId,
+            amountUsd,
+            merchantCtx,
+            "per_service_monthly_cap_exceeded"
+          );
+          return;
+        }
+      }
+    }
+  }
+
   // All checks passed — approve.
   await approveAuthorization(authId, user.id, cardId, amountUsd, merchantCtx, {
     email: user.email,
@@ -530,6 +623,44 @@ async function fetchMonthlySpend(userId: string): Promise<number> {
   if (error) {
     throw new Error(
       `Supabase error fetching monthly spend for user "${userId}": ${error.message} (${error.code})`
+    );
+  }
+
+  return (data ?? []).reduce(
+    (sum: number, row: { amount_usd: number | null }) => sum + (row.amount_usd ?? 0),
+    0
+  );
+}
+
+/**
+ * Same as `fetchMonthlySpend` but filtered to one service. Used by the
+ * per-service monthly cap enforcement so a user with a $20 vercel cap is
+ * not penalized for spend on other merchants.
+ *
+ * audit_logs.service stores the normalized slug (see normalizeMerchantName),
+ * so the filter is a straight equality check.
+ */
+async function fetchMonthlySpendForService(
+  userId: string,
+  service: string
+): Promise<number> {
+  const supabase = getSupabase();
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const { data, error } = await supabase
+    .from("audit_logs")
+    .select("amount_usd")
+    .eq("user_id", userId)
+    .eq("service", service)
+    .eq("status", "success")
+    .gte("created_at", monthStart);
+
+  if (error) {
+    throw new Error(
+      `Supabase error fetching per-service monthly spend for user "${userId}" ` +
+      `service "${service}": ${error.message} (${error.code})`
     );
   }
 

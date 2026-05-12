@@ -94,6 +94,8 @@ describe("registerCheckRulesTool — list mode", () => {
         monthly_budget_usd: 500,
         allowed_services: null,
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
       {
@@ -104,6 +106,8 @@ describe("registerCheckRulesTool — list mode", () => {
         monthly_budget_usd: null,
         allowed_services: null,
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);
@@ -134,6 +138,8 @@ describe("registerCheckRulesTool — simulate mode", () => {
         monthly_budget_usd: 500,
         allowed_services: null,
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);
@@ -158,6 +164,8 @@ describe("registerCheckRulesTool — simulate mode", () => {
         monthly_budget_usd: null,
         allowed_services: null,
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);
@@ -181,6 +189,8 @@ describe("registerCheckRulesTool — simulate mode", () => {
         monthly_budget_usd: 100,
         allowed_services: null,
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);

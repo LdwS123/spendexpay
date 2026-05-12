@@ -329,6 +329,18 @@ export interface SpendexRule {
   allowed_services: string[] | null;
   /** Block-list of service names. Any service in this list is refused. */
   blocked_services: string[] | null;
+  /**
+   * Per-service monthly cap that targets this exact service (matched on the
+   * `service` argument to `getRulesForUser`). Layered on top of any global
+   * monthly_budget_usd — both are evaluated, the tighter one wins. null when
+   * the user has no per-service monthly rule for this merchant.
+   */
+  per_service_monthly_cap_usd: number | null;
+  /**
+   * Per-service per-transaction cap that targets this exact service. Same
+   * layering as above relative to the global `max_per_transaction_usd`.
+   */
+  per_service_per_tx_cap_usd: number | null;
   /** Soft-delete / pause flag. */
   active: boolean;
 }
@@ -348,7 +360,7 @@ interface RawJsonbRuleRow {
  */
 export async function getRulesForUser(
   userId: string,
-  _service: string
+  service: string
 ): Promise<SpendexRule[]> {
   const { data, error } = await supabase
     .from("rules")
@@ -375,6 +387,15 @@ export async function getRulesForUser(
   let monthlyBudget: number | null = null;
   let allowed: string[] | null = null;
   let blocked: string[] | null = null;
+  let perServiceMonthlyCap: number | null = null;
+  let perServicePerTxCap: number | null = null;
+  // A per_service rule with `blocked: true` is treated as adding the service
+  // to the blocked_services list for this evaluation. The dashboard surfaces
+  // it as a dedicated per-service toggle so users can manage everything in
+  // one place rather than juggling a separate global block list.
+  const perServiceBlocked: string[] = [];
+
+  const normalizedTargetService = service.toLowerCase();
 
   for (const row of rows) {
     const params = row.params ?? {};
@@ -386,7 +407,47 @@ export async function getRulesForUser(
       allowed = params.services.filter((s): s is string => typeof s === "string");
     } else if (row.rule_type === "blocked_services" && Array.isArray(params.services)) {
       blocked = params.services.filter((s): s is string => typeof s === "string");
+    } else if (
+      row.rule_type === "per_service_monthly_cap" &&
+      typeof params.service === "string"
+    ) {
+      if (params.service.toLowerCase() !== normalizedTargetService) continue;
+      if (params.blocked === true) {
+        perServiceBlocked.push(params.service);
+      }
+      if (typeof params.monthly_cap_usd === "number") {
+        // Tighter wins when the user somehow has more than one row.
+        if (
+          perServiceMonthlyCap === null ||
+          params.monthly_cap_usd < perServiceMonthlyCap
+        ) {
+          perServiceMonthlyCap = params.monthly_cap_usd;
+        }
+      }
+    } else if (
+      row.rule_type === "per_service_per_tx_cap" &&
+      typeof params.service === "string"
+    ) {
+      if (params.service.toLowerCase() !== normalizedTargetService) continue;
+      if (params.blocked === true) {
+        perServiceBlocked.push(params.service);
+      }
+      if (typeof params.per_tx_cap_usd === "number") {
+        if (
+          perServicePerTxCap === null ||
+          params.per_tx_cap_usd < perServicePerTxCap
+        ) {
+          perServicePerTxCap = params.per_tx_cap_usd;
+        }
+      }
     }
+  }
+
+  // Merge per-service blocks into the global blocked_services list so the
+  // existing evaluator (which only looks at `blocked_services`) keeps
+  // working without a second code path.
+  if (perServiceBlocked.length > 0) {
+    blocked = [...(blocked ?? []), ...perServiceBlocked];
   }
 
   return [{
@@ -397,6 +458,8 @@ export async function getRulesForUser(
     monthly_budget_usd: monthlyBudget,
     allowed_services: allowed,
     blocked_services: blocked,
+    per_service_monthly_cap_usd: perServiceMonthlyCap,
+    per_service_per_tx_cap_usd: perServicePerTxCap,
     active: true,
   }];
 }
@@ -440,6 +503,21 @@ export async function getMonthlySpendUsd(
 
   const rows = (data ?? []) as Array<{ amount_usd: number | null }>;
   return rows.reduce<number>((sum, row) => sum + (row.amount_usd ?? 0), 0);
+}
+
+/**
+ * Convenience wrapper for `getMonthlySpendUsd(userId, service)` that makes
+ * call sites explicit when they are asking specifically about per-service
+ * spend (as opposed to "all services" which would pass undefined).
+ *
+ * Implemented in terms of `getMonthlySpendUsd` so we have one place that
+ * defines the SQL filter and "calendar month UTC" semantics.
+ */
+export async function getMonthlySpendUsdForService(
+  userId: string,
+  service: string
+): Promise<number> {
+  return getMonthlySpendUsd(userId, service);
 }
 
 // ---------------------------------------------------------------------------

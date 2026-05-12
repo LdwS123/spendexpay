@@ -28,6 +28,18 @@ interface PostBody {
   // Optional in the request body — older clients that don't send this field
   // will simply leave the existing rule untouched (no-op deactivate+nothing).
   blocked_services?: string[] | null;
+  // Per-service caps (use case V2 #5.2). Each entry binds a single service
+  // to its own monthly / per-transaction cap and / or a hard block. Empty
+  // array or undefined → clear any existing per-service rules for this
+  // user. Missing fields on an entry are treated as "no cap on that axis".
+  per_service_limits?: PerServiceLimit[];
+}
+
+interface PerServiceLimit {
+  service: string;
+  monthly_cap_usd?: number | null;
+  per_tx_cap_usd?: number | null;
+  blocked?: boolean;
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -92,12 +104,46 @@ export async function GET(): Promise<NextResponse> {
     const allowedServicesRule = rules.find((r) => r.rule_type === "allowed_services");
     const blockedServicesRule = rules.find((r) => r.rule_type === "blocked_services");
 
+    // ── Per-service rules ────────────────────────────────────────────────
+    // Per-service caps live as one row per axis (monthly cap, per-tx cap,
+    // blocked flag) keyed by params.service. Collapse them into one entry
+    // per service so the dashboard can render a single line per merchant.
+    const perServiceMap = new Map<string, PerServiceLimit>();
+    function upsertPerService(service: string): PerServiceLimit {
+      const existing = perServiceMap.get(service);
+      if (existing) return existing;
+      const fresh: PerServiceLimit = { service };
+      perServiceMap.set(service, fresh);
+      return fresh;
+    }
+    for (const r of rules) {
+      if (
+        r.rule_type !== "per_service_monthly_cap" &&
+        r.rule_type !== "per_service_per_tx_cap"
+      ) {
+        continue;
+      }
+      const service = r.params?.service;
+      if (typeof service !== "string" || service.length === 0) continue;
+      const entry = upsertPerService(service);
+      if (r.rule_type === "per_service_monthly_cap" && typeof r.params?.monthly_cap_usd === "number") {
+        entry.monthly_cap_usd = r.params.monthly_cap_usd;
+      }
+      if (r.rule_type === "per_service_per_tx_cap" && typeof r.params?.per_tx_cap_usd === "number") {
+        entry.per_tx_cap_usd = r.params.per_tx_cap_usd;
+      }
+      if (r.params?.blocked === true) {
+        entry.blocked = true;
+      }
+    }
+
     return NextResponse.json(
       {
         max_auto_charge_usd: user?.max_auto_charge_usd ?? 0,
         monthly_budget: (monthlyRule?.params?.usd as number) ?? null,
         allowed_services: (allowedServicesRule?.params?.services as string[]) ?? null,
         blocked_services: (blockedServicesRule?.params?.services as string[]) ?? null,
+        per_service_limits: Array.from(perServiceMap.values()),
         rules,
       },
       { status: 200 }
@@ -125,6 +171,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { max_auto_charge_usd, monthly_budget, allowed_services } = body;
   const blocked_services = body.blocked_services ?? null;
+  const per_service_limits = body.per_service_limits ?? [];
 
   // Basic validation
   if (typeof max_auto_charge_usd !== "number" || max_auto_charge_usd < 0) {
@@ -158,6 +205,52 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { error: "blocked_services must be an array of strings or null" },
       { status: 400 }
     );
+  }
+  if (!Array.isArray(per_service_limits)) {
+    return NextResponse.json(
+      { error: "per_service_limits must be an array (use [] to clear)" },
+      { status: 400 }
+    );
+  }
+  // Validate each entry up front so a malformed row doesn't get half-applied.
+  for (const entry of per_service_limits) {
+    if (
+      entry === null ||
+      typeof entry !== "object" ||
+      typeof entry.service !== "string" ||
+      entry.service.length === 0
+    ) {
+      return NextResponse.json(
+        { error: "per_service_limits[].service is required and must be a non-empty string" },
+        { status: 400 }
+      );
+    }
+    if (
+      entry.monthly_cap_usd !== undefined &&
+      entry.monthly_cap_usd !== null &&
+      (typeof entry.monthly_cap_usd !== "number" || entry.monthly_cap_usd < 0)
+    ) {
+      return NextResponse.json(
+        { error: `per_service_limits["${entry.service}"].monthly_cap_usd must be a non-negative number` },
+        { status: 400 }
+      );
+    }
+    if (
+      entry.per_tx_cap_usd !== undefined &&
+      entry.per_tx_cap_usd !== null &&
+      (typeof entry.per_tx_cap_usd !== "number" || entry.per_tx_cap_usd < 0)
+    ) {
+      return NextResponse.json(
+        { error: `per_service_limits["${entry.service}"].per_tx_cap_usd must be a non-negative number` },
+        { status: 400 }
+      );
+    }
+    if (entry.blocked !== undefined && typeof entry.blocked !== "boolean") {
+      return NextResponse.json(
+        { error: `per_service_limits["${entry.service}"].blocked must be a boolean` },
+        { status: 400 }
+      );
+    }
   }
 
   let admin: ReturnType<typeof getAdminClient>;
@@ -276,6 +369,94 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           { error: "Failed to save merchant exclusions" },
           { status: 500 }
         );
+      }
+    }
+
+    // 5. Per-service caps (use case V2 #5.2).
+    //    Same deactivate-then-insert pattern as the other rule types so a
+    //    repeated POST with the same payload is idempotent. We deactivate
+    //    ALL per-service rows for this user, then insert one row per
+    //    (service, axis) tuple that the caller wants active. This means a
+    //    payload with `per_service_limits: []` clears every existing entry.
+    const { error: deactivatePerServiceError } = await admin
+      .from("rules")
+      .update({ active: false })
+      .eq("user_id", userId)
+      .in("rule_type", ["per_service_monthly_cap", "per_service_per_tx_cap"]);
+
+    if (deactivatePerServiceError) {
+      console.error(
+        "[api/rules] POST: deactivate per_service rules error:",
+        deactivatePerServiceError
+      );
+      return NextResponse.json(
+        { error: "Failed to update per-service caps" },
+        { status: 500 }
+      );
+    }
+
+    if (per_service_limits.length > 0) {
+      // Build one or two rows per entry. We split per-tx and monthly into
+      // separate rule_type rows so the partial index on params->>'service'
+      // (migration 008) can be used by the rules-evaluation hot path.
+      type RuleInsert = {
+        user_id: string;
+        rule_type: "per_service_monthly_cap" | "per_service_per_tx_cap";
+        params: Record<string, unknown>;
+        active: boolean;
+      };
+      const rowsToInsert: RuleInsert[] = [];
+      for (const entry of per_service_limits) {
+        const serviceLower = entry.service.toLowerCase();
+        const hasMonthly =
+          entry.monthly_cap_usd !== undefined && entry.monthly_cap_usd !== null;
+        const hasPerTx =
+          entry.per_tx_cap_usd !== undefined && entry.per_tx_cap_usd !== null;
+        const blocked = entry.blocked === true;
+
+        if (hasMonthly || blocked) {
+          rowsToInsert.push({
+            user_id: userId,
+            rule_type: "per_service_monthly_cap",
+            params: {
+              service: serviceLower,
+              ...(hasMonthly ? { monthly_cap_usd: entry.monthly_cap_usd } : {}),
+              ...(blocked ? { blocked: true } : {}),
+            },
+            active: true,
+          });
+        }
+        if (hasPerTx) {
+          rowsToInsert.push({
+            user_id: userId,
+            rule_type: "per_service_per_tx_cap",
+            params: {
+              service: serviceLower,
+              per_tx_cap_usd: entry.per_tx_cap_usd,
+              ...(blocked ? { blocked: true } : {}),
+            },
+            active: true,
+          });
+        }
+        // If the entry has neither caps nor a block flag we skip it — there
+        // is nothing actionable to persist. The deactivate step above
+        // already cleared any previous entry for this service.
+      }
+
+      if (rowsToInsert.length > 0) {
+        const { error: insertPerServiceError } = await admin
+          .from("rules")
+          .insert(rowsToInsert);
+        if (insertPerServiceError) {
+          console.error(
+            "[api/rules] POST: insert per_service rules error:",
+            insertPerServiceError
+          );
+          return NextResponse.json(
+            { error: "Failed to save per-service caps" },
+            { status: 500 }
+          );
+        }
       }
     }
 

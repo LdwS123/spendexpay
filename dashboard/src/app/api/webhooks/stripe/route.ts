@@ -18,11 +18,18 @@
  *   request (HTTP 500). Without signature verification, anyone could forge
  *   payment events.
  *
- * Latency:
- *   We always return 200 quickly after the DB write completes. Stripe retries
- *   non-2xx responses with exponential backoff, so silent retries from
- *   internal errors are tolerable, but signature failures are 400 (Stripe
- *   stops retrying those).
+ * Response codes & retry semantics:
+ *   200 — event handled, or event type intentionally not handled, or the
+ *         audit_logs row was not found (not retryable: row may have been
+ *         created out-of-band or this PaymentIntent was created outside
+ *         Spendex; Stripe retrying won't change anything).
+ *   400 — malformed request (missing stripe-signature header, invalid JSON
+ *         body, signature verification failure). Stripe does not retry 4xx.
+ *   500 — server-side failure we expect Stripe to retry with exponential
+ *         backoff. Specifically: audit_logs DB write errors after we have
+ *         verified the event is authentic — losing this write means the
+ *         user's view of their payment status diverges from Stripe's, which
+ *         is precisely the case we want Stripe to retry on our behalf.
  *
  * Logging:
  *   All diagnostics go to console.error (stderr). The MCP server sibling
@@ -121,9 +128,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  // Dispatch. Each handler is wrapped in try/catch so that an unexpected
-  // error in one event type does not bubble up and cause Stripe to retry —
-  // we've already verified the signature, so the request itself was valid.
+  // Dispatch. Handlers throw `AuditWriteError` when an audit_logs row update
+  // failed in a way that desynchronizes our view of the payment from Stripe's.
+  // We convert that into 500 so Stripe retries the webhook with exponential
+  // backoff. Any other unexpected error is also surfaced as 500 — retrying a
+  // transient code bug is cheap and the alternative (silently swallowing) is
+  // unacceptable for billing data.
   try {
     switch (event.type) {
       case "payment_intent.succeeded": {
@@ -147,6 +157,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         break;
       }
       default:
+        // Event type we deliberately do not handle. Tell Stripe to stop
+        // retrying — there is no work for us to do.
         console.error(
           `[webhook/stripe] Unhandled event type="${event.type}" id="${event.id}". No action taken.`
         );
@@ -154,14 +166,43 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    if (err instanceof AuditWriteError) {
+      console.error(
+        `[webhook/stripe] AUDIT WRITE FAILED for event type="${event.type}" id="${event.id}": ${message}. ` +
+          `Returning 500 so Stripe retries — our audit_logs row is desynchronized from Stripe's view.`
+      );
+      return NextResponse.json(
+        { error: "Audit log write failed; please retry" },
+        { status: 500 }
+      );
+    }
     console.error(
-      `[webhook/stripe] Unexpected error processing event type="${event.type}" id="${event.id}": ${message}.`
+      `[webhook/stripe] Unexpected error processing event type="${event.type}" id="${event.id}": ${message}. ` +
+        `Returning 500 so Stripe retries.`
     );
-    // Still return 200 — the event was authentic, retrying won't fix a code
-    // bug. Surface via logs/Sentry instead.
+    return NextResponse.json(
+      { error: "Internal error processing webhook" },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ received: true }, { status: 200 });
+}
+
+// ---------------------------------------------------------------------------
+// AuditWriteError — thrown by handlers when an audit_logs DB write fails in
+// a way that puts our state out of sync with Stripe's. The outer dispatcher
+// converts this into 500 so Stripe retries via exponential backoff.
+//
+// Distinct from "row not found" cases, which the handlers treat as a benign
+// no-op and return normally (the dispatcher then returns 200).
+// ---------------------------------------------------------------------------
+
+class AuditWriteError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AuditWriteError";
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -191,18 +232,18 @@ async function handlePaymentSucceeded(
     .select("id");
 
   if (error) {
-    console.error(
-      `[webhook/stripe] Supabase update failed for transaction_id="${intent.id}": ` +
+    // Critical: pending → success transition failed. Tell Stripe to retry.
+    throw new AuditWriteError(
+      `audit_logs update failed for transaction_id="${intent.id}" on payment_intent.succeeded: ` +
         `${error.message} (code: ${error.code}).`
     );
-    return;
   }
 
   if (!data || data.length === 0) {
     console.error(
       `[webhook/stripe] WARNING: no audit_logs row matched transaction_id="${intent.id}" ` +
         `for payment_intent.succeeded. The row may not have been written yet, or this ` +
-        `PaymentIntent was created outside of Spendex.`
+        `PaymentIntent was created outside of Spendex. Returning 200 — no retry will help.`
     );
     return;
   }
@@ -237,17 +278,18 @@ async function handlePaymentFailed(
     .select("id");
 
   if (error) {
-    console.error(
-      `[webhook/stripe] Supabase update failed for transaction_id="${intent.id}": ` +
+    // Critical: pending → payment_failed transition must persist so the user
+    // sees the failure in the dashboard. Tell Stripe to retry.
+    throw new AuditWriteError(
+      `audit_logs update failed for transaction_id="${intent.id}" on payment_intent.payment_failed: ` +
         `${error.message} (code: ${error.code}).`
     );
-    return;
   }
 
   if (!data || data.length === 0) {
     console.error(
       `[webhook/stripe] WARNING: no audit_logs row matched transaction_id="${intent.id}" ` +
-        `for payment_intent.payment_failed. Logging only.`
+        `for payment_intent.payment_failed. Logging only — no retry will help.`
     );
     return;
   }
@@ -354,11 +396,12 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
   });
 
   if (insertError) {
-    console.error(
-      `[webhook/stripe] Failed to insert refund audit_logs row for refund_id="${refundId}": ` +
+    // Critical: the refund must be recorded in audit_logs or the user's
+    // balance view drifts from Stripe's. Tell Stripe to retry.
+    throw new AuditWriteError(
+      `Failed to insert refund audit_logs row for refund_id="${refundId}": ` +
         `${insertError.message} (code: ${insertError.code}).`
     );
-    return;
   }
 
   console.error(

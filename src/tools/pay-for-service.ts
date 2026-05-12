@@ -548,9 +548,26 @@ async function evaluateRules(params: {
     }
   }
 
-  // 2. Per-transaction cap — combine the user's max_auto_charge_usd with the
-  //    tightest per-rule per-transaction cap. A `max_auto_charge_usd` of 0
-  //    means "no auto-approval threshold configured" — skip that side.
+  // 2. Per-service per-transaction cap — narrower than the global per-tx cap
+  //    and evaluated first so the decline message names the specific service
+  //    that blocked the charge (e.g. "monthly cap for vercel exceeded …").
+  //    `getRulesForUser` returns at most one synthetic rule with the per
+  //    service caps already matched to this service.
+  for (const rule of rules) {
+    if (rule.per_service_per_tx_cap_usd === null) continue;
+    if (amountUsd > rule.per_service_per_tx_cap_usd) {
+      return declineMessage(
+        `per-transaction cap for ${service} exceeded ` +
+        `($${amountUsd.toFixed(2)} attempted, $${rule.per_service_per_tx_cap_usd.toFixed(2)} cap)`,
+        `ask the user to raise the ${service} per-transaction cap at spendexai.com/dashboard/rules ` +
+        "or retry with a smaller amount"
+      );
+    }
+  }
+
+  // 3. Global per-transaction cap — combine the user's max_auto_charge_usd
+  //    with the tightest per-rule per-transaction cap. A `max_auto_charge_usd`
+  //    of 0 means "no auto-approval threshold configured" — skip that side.
   let effectiveTxCap: number | null = null;
   if (userMaxAutoCharge > 0) effectiveTxCap = userMaxAutoCharge;
   for (const rule of rules) {
@@ -568,12 +585,12 @@ async function evaluateRules(params: {
     );
   }
 
-  // 3. Monthly budget — requires a DB roundtrip per scope. Cache per scope so
-  //    a user with multiple monthly rules (global + per-service) only pays
-  //    one DB hit per filter.
-  const monthlyRules = rules.filter((r) => r.monthly_budget_usd !== null);
-  if (monthlyRules.length === 0) return null;
-
+  // 4. Per-service monthly cap — requires its own DB read filtered to the
+  //    target service. Done before the global monthly check so the agent
+  //    sees the most specific reason a charge was blocked.
+  const perServiceMonthlyRule = rules.find(
+    (r) => r.per_service_monthly_cap_usd !== null
+  );
   const spendCache = new Map<string, number>();
   async function spendFor(filter: string | null): Promise<number> {
     const key = filter ?? "__all__";
@@ -583,6 +600,25 @@ async function evaluateRules(params: {
     spendCache.set(key, value);
     return value;
   }
+
+  if (perServiceMonthlyRule) {
+    const cap = perServiceMonthlyRule.per_service_monthly_cap_usd as number;
+    const spent = await spendFor(service);
+    if (spent + amountUsd > cap) {
+      return declineMessage(
+        `monthly cap for ${service} exceeded ` +
+        `($${spent.toFixed(2)} spent, $${cap.toFixed(2)} cap, this charge $${amountUsd.toFixed(2)} ` +
+        `would bring to $${(spent + amountUsd).toFixed(2)})`,
+        `ask the user to raise the ${service} monthly cap at spendexai.com/dashboard/rules, ` +
+        "wait until next month, or split the charge into smaller pieces"
+      );
+    }
+  }
+
+  // 5. Global monthly budget — same cache so a user who has BOTH a global
+  //    budget AND a per-service cap only pays one DB hit per filter scope.
+  const monthlyRules = rules.filter((r) => r.monthly_budget_usd !== null);
+  if (monthlyRules.length === 0) return null;
 
   for (const rule of monthlyRules) {
     const budget = rule.monthly_budget_usd as number;

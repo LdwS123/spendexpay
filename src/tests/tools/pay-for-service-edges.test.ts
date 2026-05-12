@@ -363,6 +363,8 @@ describe("registerPayForServiceTool — Unicode service name", () => {
         monthly_budget_usd: null,
         allowed_services: null,
         blocked_services: [upper],
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);
@@ -482,6 +484,8 @@ describe("registerPayForServiceTool — max_auto_charge_usd = 0 with allowed_ser
         monthly_budget_usd: null,
         allowed_services: ["modal", "openai"],
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);
@@ -511,6 +515,8 @@ describe("registerPayForServiceTool — max_auto_charge_usd = 0 with allowed_ser
         monthly_budget_usd: null,
         allowed_services: ["vercel"],
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);
@@ -545,6 +551,8 @@ describe("registerPayForServiceTool — monthly budget boundary", () => {
         monthly_budget_usd: 50,
         allowed_services: null,
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);
@@ -567,6 +575,8 @@ describe("registerPayForServiceTool — monthly budget boundary", () => {
         monthly_budget_usd: 50,
         allowed_services: null,
         blocked_services: null,
+        per_service_monthly_cap_usd: null,
+        per_service_per_tx_cap_usd: null,
         active: true,
       },
     ]);

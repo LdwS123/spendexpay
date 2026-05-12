@@ -13,6 +13,19 @@ export const dynamic = "force-dynamic";
  * POST → upserts the user's row.
  *
  * The row lives in `user_consent_preferences` and is keyed by `user_id`.
+ *
+ * ─── Schema mapping ─────────────────────────────────────────────────────────
+ * The dashboard UI talks in `threshold_usd`, `email_enabled`, `telegram_enabled`
+ * for historical reasons, but the actual DB columns (per
+ * migrations/003_consent_layer.sql) are:
+ *
+ *   - `auto_below_threshold_usd`    numeric         (was: threshold_usd)
+ *   - `notification_channels`        jsonb (array)  (encodes email/telegram on)
+ *
+ * Email is always-on in v1 per product spec; the only configurable channel is
+ * Telegram. We translate between the two shapes here so neither the UI nor the
+ * MCP server (`src/lib/db.ts:getOrCreateConsentPreferences`) has to know about
+ * the other's naming.
  */
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -30,7 +43,12 @@ const VALID_MODES: ReadonlyArray<DefaultMode> = [
   "never_auto",
 ];
 
-interface PreferencesRow {
+/**
+ * Wire shape returned to the dashboard UI. Field names match what the UI
+ * already expects (legacy names) — `threshold_usd`, `email_enabled`,
+ * `telegram_enabled`.
+ */
+interface PreferencesWire {
   user_id: string;
   default_mode: DefaultMode | null;
   threshold_usd: number | null;
@@ -38,6 +56,19 @@ interface PreferencesRow {
   telegram_chat_id: string | null;
   email_enabled: boolean | null;
   telegram_enabled: boolean | null;
+  updated_at?: string | null;
+}
+
+/**
+ * Raw DB row shape — these are the real column names from migration 003.
+ */
+interface PreferencesDbRow {
+  user_id: string;
+  default_mode: DefaultMode | null;
+  auto_below_threshold_usd: number | string | null;
+  trusted_services: unknown;
+  notification_channels: unknown;
+  telegram_chat_id: string | null;
   updated_at?: string | null;
 }
 
@@ -61,7 +92,7 @@ async function getAuthedUserId(): Promise<string | null> {
   return user.id;
 }
 
-function defaults(userId: string): PreferencesRow {
+function defaults(userId: string): PreferencesWire {
   return {
     user_id: userId,
     default_mode: "always_ask",
@@ -70,6 +101,56 @@ function defaults(userId: string): PreferencesRow {
     telegram_chat_id: null,
     email_enabled: true,
     telegram_enabled: false,
+  };
+}
+
+/**
+ * Coerce a jsonb-shaped value into a string[]. Accepts a real array, a
+ * JSON-encoded string, or null. Any unrecognized shape collapses to [].
+ */
+function coerceStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((v): v is string => typeof v === "string");
+  }
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((v): v is string => typeof v === "string");
+      }
+    } catch {
+      // fall through
+    }
+  }
+  return [];
+}
+
+/**
+ * Convert a DB row to the wire shape the dashboard UI expects.
+ *
+ * `notification_channels` is the source of truth for email/telegram on/off:
+ *   - "email" present     → email_enabled: true   (always true in v1)
+ *   - "telegram" present  → telegram_enabled: true
+ */
+function rowToWire(row: PreferencesDbRow): PreferencesWire {
+  const channels = coerceStringArray(row.notification_channels);
+  const threshold =
+    row.auto_below_threshold_usd === null ||
+    row.auto_below_threshold_usd === undefined
+      ? null
+      : typeof row.auto_below_threshold_usd === "string"
+      ? Number(row.auto_below_threshold_usd)
+      : row.auto_below_threshold_usd;
+
+  return {
+    user_id: row.user_id,
+    default_mode: row.default_mode,
+    threshold_usd: Number.isFinite(threshold) ? (threshold as number) : null,
+    trusted_services: coerceStringArray(row.trusted_services),
+    telegram_chat_id: row.telegram_chat_id,
+    email_enabled: channels.includes("email"),
+    telegram_enabled: channels.includes("telegram"),
+    updated_at: row.updated_at ?? null,
   };
 }
 
@@ -93,7 +174,8 @@ export async function GET(): Promise<NextResponse> {
     const { data, error } = await admin
       .from("user_consent_preferences")
       .select(
-        "user_id, default_mode, threshold_usd, trusted_services, telegram_chat_id, email_enabled, telegram_enabled, updated_at"
+        "user_id, default_mode, auto_below_threshold_usd, trusted_services, " +
+          "notification_channels, telegram_chat_id, updated_at"
       )
       .eq("user_id", userId)
       .maybeSingle();
@@ -117,7 +199,10 @@ export async function GET(): Promise<NextResponse> {
       return NextResponse.json(defaults(userId), { status: 200 });
     }
 
-    return NextResponse.json(data as PreferencesRow, { status: 200 });
+    return NextResponse.json(
+      rowToWire(data as unknown as PreferencesDbRow),
+      { status: 200 }
+    );
   } catch (err) {
     console.error("[api/consent/preferences] GET unexpected:", err);
     return NextResponse.json(
@@ -156,7 +241,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // ── Validate threshold_usd ───────────────────────────────────────────────
+  // ── Validate threshold_usd (mapped to auto_below_threshold_usd in DB) ────
   let thresholdUsd: number | null = null;
   if (body.threshold_usd !== undefined && body.threshold_usd !== null) {
     if (
@@ -211,6 +296,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     telegramEnabled = body.telegram_enabled;
   }
 
+  // ── Build notification_channels from email_enabled (always on) + telegram
+  // Email is always on per product spec. Telegram is the only user-toggle.
+  const notificationChannels: string[] = ["email"];
+  if (telegramEnabled) notificationChannels.push("telegram");
+
   // ── Upsert ───────────────────────────────────────────────────────────────
   let admin: ReturnType<typeof getAdminClient>;
   try {
@@ -224,14 +314,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const payload: PreferencesRow = {
+    // Payload uses REAL DB column names (per migration 003).
+    const payload = {
       user_id: userId,
       default_mode: defaultMode as DefaultMode,
-      threshold_usd: thresholdUsd,
-      trusted_services: trustedServices,
+      auto_below_threshold_usd: thresholdUsd,
+      trusted_services: trustedServices ?? [],
+      notification_channels: notificationChannels,
       telegram_chat_id: telegramChatId,
-      email_enabled: true, // Email is always on per product spec.
-      telegram_enabled: telegramEnabled,
     };
 
     const { error } = await admin

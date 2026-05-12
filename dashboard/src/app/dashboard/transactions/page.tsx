@@ -3,6 +3,47 @@ import { createClient } from "@/lib/supabase/server";
 import type { AuditLog } from "@/app/api/transactions/route";
 import TransactionsClient from "./TransactionsClient";
 
+// Computed once per request; passed to the client export button so it
+// uses the same window we describe in the UI ("this month").
+function getThisMonthRange(): { from: string; to: string } {
+  const now = new Date();
+  const from = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0)
+  ).toISOString();
+  const to = now.toISOString();
+  return { from, to };
+}
+
+function ExportCsvButton({ from, to }: { from: string; to: string }) {
+  const href = `/api/transactions/export?from=${encodeURIComponent(
+    from
+  )}&to=${encodeURIComponent(to)}`;
+  return (
+    <a
+      href={href}
+      // The route returns a Content-Disposition: attachment header, so most
+      // browsers will trigger a download without ever swapping tabs. We still
+      // open in _blank for browsers that ignore the attachment hint.
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-colors"
+    >
+      <svg
+        className="w-3.5 h-3.5"
+        fill="none"
+        viewBox="0 0 16 16"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        aria-hidden="true"
+      >
+        <path d="M8 2v8m0 0l-3-3m3 3l3-3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M2.5 11v2a1 1 0 001 1h9a1 1 0 001-1v-2" strokeLinecap="round" />
+      </svg>
+      Export CSV
+    </a>
+  );
+}
+
 function FilterLink({
   href,
   label,
@@ -106,14 +147,10 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
             />
           ))}
           <div className="ml-auto">
-            <button
-              type="button"
-              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-              disabled
-              title="Export coming soon"
-            >
-              Export CSV
-            </button>
+            {(() => {
+              const { from, to } = getThisMonthRange();
+              return <ExportCsvButton from={from} to={to} />;
+            })()}
           </div>
         </div>
 
