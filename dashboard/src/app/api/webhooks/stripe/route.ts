@@ -40,17 +40,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { stripe } from "@/lib/stripe";
 
 // Stripe signature verification requires the exact bytes sent over the wire.
 export const dynamic = "force-dynamic";
-
-// ---------------------------------------------------------------------------
-// Stripe client
-// ---------------------------------------------------------------------------
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-02-24.acacia",
-});
 
 // ---------------------------------------------------------------------------
 // Supabase admin client (service-role; bypasses RLS)

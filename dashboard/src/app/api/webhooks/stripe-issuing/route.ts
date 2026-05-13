@@ -34,16 +34,9 @@ import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { sendChargeNotification } from "@/lib/email";
 import { normalizeMerchantName } from "@/lib/merchant-normalize";
+import { stripe } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
-
-// ---------------------------------------------------------------------------
-// Stripe client
-// ---------------------------------------------------------------------------
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-02-24.acacia",
-});
 
 // ---------------------------------------------------------------------------
 // Supabase client (dashboard-local, not shared with MCP server)

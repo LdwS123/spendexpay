@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
 import Stripe from "stripe";
+import { stripe } from "@/lib/stripe";
 import { PaymentForm } from "./PaymentForm";
 
 export const metadata: Metadata = {
   title: "Approve payment",
 };
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-02-24.acacia",
-});
 
 interface PageProps {
   params: Promise<{ intentId: string }>;
