@@ -53,6 +53,7 @@ interface PreferencesWire {
   default_mode: DefaultMode | null;
   threshold_usd: number | null;
   trusted_services: string[] | null;
+  auto_signup_allowed_services: string[] | null;
   telegram_chat_id: string | null;
   email_enabled: boolean | null;
   telegram_enabled: boolean | null;
@@ -68,6 +69,7 @@ interface PreferencesDbRow {
   default_mode: DefaultMode | null;
   auto_below_threshold_usd: number | string | null;
   trusted_services: unknown;
+  auto_signup_allowed_services: unknown;
   notification_channels: unknown;
   telegram_chat_id: string | null;
   updated_at?: string | null;
@@ -77,6 +79,7 @@ interface PostBody {
   default_mode?: unknown;
   threshold_usd?: unknown;
   trusted_services?: unknown;
+  auto_signup_allowed_services?: unknown;
   telegram_chat_id?: unknown;
   telegram_enabled?: unknown;
   push_enabled?: unknown;
@@ -100,6 +103,7 @@ function defaults(userId: string): PreferencesWire {
     default_mode: "always_ask",
     threshold_usd: null,
     trusted_services: null,
+    auto_signup_allowed_services: null,
     telegram_chat_id: null,
     email_enabled: true,
     telegram_enabled: false,
@@ -150,6 +154,9 @@ function rowToWire(row: PreferencesDbRow): PreferencesWire {
     default_mode: row.default_mode,
     threshold_usd: Number.isFinite(threshold) ? (threshold as number) : null,
     trusted_services: coerceStringArray(row.trusted_services),
+    auto_signup_allowed_services: coerceStringArray(
+      row.auto_signup_allowed_services
+    ),
     telegram_chat_id: row.telegram_chat_id,
     email_enabled: channels.includes("email"),
     telegram_enabled: channels.includes("telegram"),
@@ -179,7 +186,8 @@ export async function GET(): Promise<NextResponse> {
       .from("user_consent_preferences")
       .select(
         "user_id, default_mode, auto_below_threshold_usd, trusted_services, " +
-          "notification_channels, telegram_chat_id, updated_at"
+          "auto_signup_allowed_services, notification_channels, " +
+          "telegram_chat_id, updated_at"
       )
       .eq("user_id", userId)
       .maybeSingle();
@@ -276,6 +284,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     trustedServices = body.trusted_services as string[];
   }
 
+  // ── Validate auto_signup_allowed_services ────────────────────────────────
+  // Per-service allowlist that lets signup_to_service bypass the consent
+  // prompt for explicitly whitelisted services (migration 010).
+  let autoSignupAllowedServices: string[] | null = null;
+  if (
+    body.auto_signup_allowed_services !== undefined &&
+    body.auto_signup_allowed_services !== null
+  ) {
+    if (
+      !Array.isArray(body.auto_signup_allowed_services) ||
+      body.auto_signup_allowed_services.some((s) => typeof s !== "string")
+    ) {
+      return NextResponse.json(
+        {
+          error: "auto_signup_allowed_services must be an array of strings",
+        },
+        { status: 400 }
+      );
+    }
+    autoSignupAllowedServices = body.auto_signup_allowed_services as string[];
+  }
+
   // ── Validate telegram_chat_id ────────────────────────────────────────────
   let telegramChatId: string | null = null;
   if (body.telegram_chat_id !== undefined && body.telegram_chat_id !== null) {
@@ -331,8 +361,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    // Payload uses REAL DB column names (per migration 003).
-    const payload = {
+    // Payload uses REAL DB column names (per migrations 003 + 010).
+    // `auto_signup_allowed_services` is only included when the client sent
+    // it — omitting it lets the column default ('{}') stand on first insert
+    // and leaves the existing value untouched on update.
+    const payload: Record<string, unknown> = {
       user_id: userId,
       default_mode: defaultMode as DefaultMode,
       auto_below_threshold_usd: thresholdUsd,
@@ -340,6 +373,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       notification_channels: notificationChannels,
       telegram_chat_id: telegramChatId,
     };
+    if (autoSignupAllowedServices !== null) {
+      payload.auto_signup_allowed_services = autoSignupAllowedServices;
+    }
 
     const { error } = await admin
       .from("user_consent_preferences")

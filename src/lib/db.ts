@@ -982,6 +982,38 @@ export async function getAutoSignupAllowance(
 }
 
 /**
+ * Read the per-user auto-signup allowlist from `user_consent_preferences`.
+ *
+ * Returns the array of service slugs the user has whitelisted for autonomous
+ * signup (see migration 010). Always returns an array — never null — so
+ * callers can `.includes()` without a guard. A read failure is downgraded to
+ * an empty list and logged: a missing allowlist is functionally the same as
+ * "not whitelisted" and we'd rather fall back to the consent prompt than
+ * fail the whole call.
+ */
+export async function getAutoSignupAllowedServices(
+  userId: string
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("user_consent_preferences")
+    .select("auto_signup_allowed_services")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error && error.code !== "PGRST116") {
+    console.error(
+      `[db] getAutoSignupAllowedServices: read failed for user ${userId}: ` +
+      `${error.message} (code: ${error.code}). Treating as empty allowlist.`
+    );
+    return [];
+  }
+
+  const row = data as { auto_signup_allowed_services: unknown } | null;
+  if (!row) return [];
+  return coerceStringArray(row.auto_signup_allowed_services);
+}
+
+/**
  * Fetch the user's active virtual card identifier.
  *
  * Returns null if the user has no card on file or the row could not be read.

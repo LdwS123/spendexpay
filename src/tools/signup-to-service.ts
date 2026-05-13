@@ -23,6 +23,7 @@ import {
   createManagedAccount,
   getActiveVirtualCardForUser,
   getAutoSignupAllowance,
+  getAutoSignupAllowedServices,
   getUserByMcpToken,
   logTransaction,
 } from "../lib/db.js";
@@ -275,18 +276,48 @@ export function registerSignupToServiceTool(server: McpServer): void {
         );
       }
       if (allowance !== true) {
-        return textResponse(
-          `AUTO-SIGNUP REQUIRES EXPLICIT CONSENT\n` +
-          `\n` +
-          `The user hasn't explicitly enabled auto-signup. Before this tool can create\n` +
-          `an account on their behalf, you must:\n` +
-          `\n` +
-          `1. Call request_user_consent with action="signup_to_service", service="${input.service}",\n` +
-          `   and explain why an account is needed in the context.\n` +
-          `2. After the user approves, retry signup_to_service.\n` +
-          `\n` +
-          `This is required because creating an account binds the user legally to that\n` +
-          `service's Terms of Service.`
+        // Before refusing, consult the per-service allowlist on
+        // `user_consent_preferences.auto_signup_allowed_services`. A user can
+        // whitelist specific trusted services (e.g. "openai", "vercel") so
+        // future signups to those services bypass the consent prompt while
+        // every other service still requires an explicit opt-in.
+        //
+        // The allowlist is NOT an override of an explicit
+        // `allow_auto_signup = false` (handled above) — only of the "never
+        // configured" (null) case.
+        let allowedServices: string[] = [];
+        try {
+          allowedServices = await getAutoSignupAllowedServices(user.id);
+        } catch (err) {
+          // Treat a lookup failure as an empty allowlist — we'd rather fall
+          // back to the consent prompt than crash the whole signup call.
+          console.error(
+            `[signup_to_service] allowlist lookup failed for user ${user.id}: ` +
+            `${errorMessage(err, "unknown error")}. Falling back to refusal.`
+          );
+        }
+
+        if (!allowedServices.includes(input.service)) {
+          return textResponse(
+            `AUTO-SIGNUP REQUIRES EXPLICIT CONSENT\n` +
+            `\n` +
+            `The user hasn't explicitly enabled auto-signup. Before this tool can create\n` +
+            `an account on their behalf, you must:\n` +
+            `\n` +
+            `1. Call request_user_consent with action="signup_to_service", service="${input.service}",\n` +
+            `   and explain why an account is needed in the context.\n` +
+            `2. After the user approves, retry signup_to_service.\n` +
+            `\n` +
+            `This is required because creating an account binds the user legally to that\n` +
+            `service's Terms of Service.\n` +
+            `\n` +
+            `To allow Spendex to sign up to ${input.service} automatically in the future, add it to your\n` +
+            `auto_signup_allowed_services in /dashboard/consents/preferences.`
+          );
+        }
+        // Service is whitelisted — fall through to the happy path below.
+        console.error(
+          `[signup_to_service] service=${input.service} matched user ${user.id} allowlist; bypassing consent prompt.`
         );
       }
 
