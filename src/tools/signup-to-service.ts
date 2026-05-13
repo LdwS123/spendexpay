@@ -33,6 +33,7 @@ import {
 } from "../lib/crypto.js";
 import { checkRateLimit } from "../lib/rate-limit.js";
 import { retrieveCardDetails } from "../lib/stripe-issuing.js";
+import { findPlaybook } from "../lib/merchant-playbooks.js";
 
 // Same shape every other tool validates against.
 const MCP_TOKEN_PATTERN = /^spx_[0-9a-f]{32}$/;
@@ -118,6 +119,49 @@ function formatSignupReady(params: {
     `\n` +
     `When done, call complete_signup({managed_account_id: "${managedAccountId}", external_account_id: "<id from service>"})\n` +
     `If the service sends a verification email, call get_verification_email({managed_account_id: "${managedAccountId}"}) — Spendex catches inbound emails to the alias.`
+  );
+}
+
+/**
+ * Build the agent-facing READY TO SIGN UP response for the *passwordless*
+ * (magic-link) branch. When the merchant's playbook has
+ * `supports_magic_link: true`, this is strictly better than the password
+ * flow: the agent requests a link from the service, polls our alias inbox
+ * via `get_verification_email`, and navigates to the captured URL — the
+ * user never leaves chat, no password is ever typed.
+ */
+function formatSignupReadyMagicLink(params: {
+  service: string;
+  managedAccountId: string;
+  emailAlias: string;
+  card: { number: string; expMonth: number; expYear: number; cvc: string };
+}): string {
+  const { service, managedAccountId, emailAlias, card } = params;
+  const signupUrl = `https://${service}.com/signup`;
+  const grouped = formatPanWithSpaces(card.number);
+  const expiry = formatExpiry(card.expMonth, card.expYear);
+
+  return (
+    `READY TO SIGN UP (magic-link / passwordless)\n` +
+    `\n` +
+    `Service: ${service}\n` +
+    `Spendex managed account ID: ${managedAccountId}\n` +
+    `\n` +
+    `This merchant supports passwordless signup. DO NOT type a password.\n` +
+    `\n` +
+    `1. Open ${signupUrl} and enter this email:\n` +
+    `   Email: ${emailAlias}\n` +
+    `2. Click the "Send magic link" / "Email me a link" button.\n` +
+    `3. Poll get_verification_email({managed_account_id: "${managedAccountId}"}) ` +
+    `until the magic-link email arrives — Spendex catches inbound mail to the alias.\n` +
+    `4. Extract the magic-link URL from the email body and navigate to it.\n` +
+    `\n` +
+    `After verification, add this card to the billing section:\n` +
+    `Card number: ${grouped}\n` +
+    `Expiry: ${expiry}\n` +
+    `CVC: ${card.cvc}\n` +
+    `\n` +
+    `When done, call complete_signup({managed_account_id: "${managedAccountId}", external_account_id: "<id from service>"})`
   );
 }
 
@@ -267,8 +311,24 @@ export function registerSignupToServiceTool(server: McpServer): void {
         );
       }
 
+      // BEFORE generating a password, check whether this merchant supports
+      // passwordless (magic-link) signup. When it does, the agent never types
+      // a password — it asks the service to email a link, polls our alias
+      // inbox via get_verification_email, and navigates to the captured URL.
+      // The password column on managed_accounts stays empty in that branch.
+      const playbook = findPlaybook(input.service);
+      const useMagicLink = playbook?.supports_magic_link === true;
+      if (useMagicLink) {
+        console.error(
+          `[signup_to_service] using magic-link branch for service=${input.service}`
+        );
+      }
+
       // Generate credentials. 12-char hex is 48 bits of entropy → collision-
-      // free in practice across millions of aliases per user.
+      // free in practice across millions of aliases per user. A password is
+      // still generated on the magic-link branch as a fallback in case the
+      // service later asks the user to set one — it is never surfaced to the
+      // agent unless the password branch is taken.
       const shortHash = generateShortHash(6);
       const emailAlias = `signup-${shortHash}@${EMAIL_DOMAIN}`;
       const password = generateSecurePassword(32);
@@ -307,6 +367,17 @@ export function registerSignupToServiceTool(server: McpServer): void {
         console.error(
           `[signup_to_service] audit log write failed for managed_account ${managed.id}: ` +
           `${errorMessage(logErr, "unknown error")}`
+        );
+      }
+
+      if (useMagicLink) {
+        return textResponse(
+          formatSignupReadyMagicLink({
+            service: input.service,
+            managedAccountId: managed.id,
+            emailAlias,
+            card: cardDetails,
+          })
         );
       }
 

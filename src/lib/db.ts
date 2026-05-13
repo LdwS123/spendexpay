@@ -1988,6 +1988,119 @@ export async function cancelSubscription(
   return mapSubscriptionRow(data as unknown as RawSubscriptionRow);
 }
 
+// ===========================================================================
+// Virtual phones + inbound SMS (migration 008_virtual_phone.sql)
+//
+// Spendex provisions a Twilio number per user so SMS verification codes
+// land in our infrastructure instead of the user's personal phone. The
+// `get_sms_code` MCP tool reads from here; the /api/webhooks/twilio-sms
+// route writes here.
+// ===========================================================================
+
+export interface VirtualPhoneRecord {
+  id: string;
+  user_id: string;
+  e164_number: string;
+  twilio_sid: string;
+  provisioned_at: string;
+  released_at: string | null;
+}
+
+export interface SmsMessageRecord {
+  id: string;
+  virtual_phone_id: string;
+  from_number: string;
+  body: string;
+  extracted_code: string | null;
+  received_at: string;
+  consumed_at: string | null;
+}
+
+/**
+ * Return the user's active (not-released) virtual phone, if any. The
+ * one_active_per_user unique constraint guarantees at most one such row.
+ */
+export async function getActiveVirtualPhone(
+  userId: string
+): Promise<VirtualPhoneRecord | null> {
+  const { data, error } = await supabase
+    .from("virtual_phones")
+    .select("id, user_id, e164_number, twilio_sid, provisioned_at, released_at")
+    .eq("user_id", userId)
+    .is("released_at", null)
+    .maybeSingle();
+
+  if (error) {
+    console.error(
+      `[db] getActiveVirtualPhone: unexpected error (code: ${error.code}): ${error.message}. ` +
+      `user=${userId}.`
+    );
+    return null;
+  }
+  if (!data) return null;
+  return data as VirtualPhoneRecord;
+}
+
+/**
+ * Read the most recent unconsumed SMS for a virtual phone, then atomically
+ * mark it consumed so the next caller does not get the same code. We use a
+ * conditional update on `consumed_at IS NULL` so that two concurrent reads
+ * cannot both "win" — exactly one returns the row.
+ *
+ * Returns null when there is no unread SMS or when another caller raced us.
+ */
+export async function consumeLatestSmsForPhone(
+  virtualPhoneId: string
+): Promise<SmsMessageRecord | null> {
+  // 1. Find the candidate row.
+  const { data: candidate, error: selectError } = await supabase
+    .from("sms_messages")
+    .select(
+      "id, virtual_phone_id, from_number, body, extracted_code, received_at, consumed_at"
+    )
+    .eq("virtual_phone_id", virtualPhoneId)
+    .is("consumed_at", null)
+    .order("received_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (selectError) {
+    console.error(
+      `[db] consumeLatestSmsForPhone: select failed (code: ${selectError.code}): ${selectError.message}. ` +
+      `virtual_phone_id=${virtualPhoneId}.`
+    );
+    return null;
+  }
+  if (!candidate) return null;
+
+  const row = candidate as SmsMessageRecord;
+
+  // 2. Atomically mark it consumed. The `.is("consumed_at", null)` predicate
+  // means a concurrent reader that already marked this row will cause our
+  // update to affect zero rows — we return null in that case so the caller
+  // can retry or wait.
+  const consumedAt = new Date().toISOString();
+  const { data: updated, error: updateError } = await supabase
+    .from("sms_messages")
+    .update({ consumed_at: consumedAt })
+    .eq("id", row.id)
+    .is("consumed_at", null)
+    .select(
+      "id, virtual_phone_id, from_number, body, extracted_code, received_at, consumed_at"
+    )
+    .maybeSingle();
+
+  if (updateError) {
+    console.error(
+      `[db] consumeLatestSmsForPhone: update failed (code: ${updateError.code}): ${updateError.message}. ` +
+      `id=${row.id}.`
+    );
+    return null;
+  }
+  if (!updated) return null;
+  return updated as SmsMessageRecord;
+}
+
 /**
  * Best-effort transition pending → expired. Returns the updated row on
  * success, or null if the row was already non-pending (someone else

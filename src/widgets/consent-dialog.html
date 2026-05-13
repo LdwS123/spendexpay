@@ -811,10 +811,11 @@ const { App } = globalThis.ExtApps;
       el("amountValue").textContent = a.value;
     }
 
+    const currency = data.currency || "USD";
     const monthlySpent = Number(data.monthly_spent);
     const monthlyCap = Number(data.monthly_cap);
     if (Number.isFinite(monthlySpent) && Number.isFinite(monthlyCap) && monthlyCap > 0) {
-      el("monthlyLine").textContent = `${fmtUsd(monthlySpent)} / ${fmtUsd(monthlyCap)} used`;
+      el("monthlyLine").textContent = `${fmtMoney(monthlySpent, currency)} / ${fmtMoney(monthlyCap, currency)} used`;
       const pct = Math.min(100, Math.max(0, (monthlySpent / monthlyCap) * 100));
       const fill = el("monthlyFill");
       fill.style.width = `${pct}%`;
@@ -822,7 +823,7 @@ const { App } = globalThis.ExtApps;
       if (pct >= 90) fill.classList.add("over");
       else if (pct >= 70) fill.classList.add("warn");
     } else if (Number.isFinite(monthlySpent)) {
-      el("monthlyLine").textContent = `${fmtUsd(monthlySpent)} used (no cap)`;
+      el("monthlyLine").textContent = `${fmtMoney(monthlySpent, currency)} used (no cap)`;
       el("monthlyFill").style.width = "0%";
     } else {
       el("monthlyLine").textContent = "no cap configured";
@@ -830,7 +831,7 @@ const { App } = globalThis.ExtApps;
     }
 
     if (Number.isFinite(Number(data.per_tx_cap))) {
-      el("perTxLine").textContent = fmtUsd(data.per_tx_cap);
+      el("perTxLine").textContent = fmtMoney(data.per_tx_cap, currency);
     } else {
       el("perTxLine").textContent = "no cap";
     }

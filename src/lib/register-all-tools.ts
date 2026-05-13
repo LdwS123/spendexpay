@@ -33,7 +33,9 @@ import {
 import { registerSubmitConsentDecisionTool } from "../tools/submit-consent.js";
 import { registerCheckConsentStatusTool } from "../tools/check-consent-status.js";
 import { registerGetVerificationEmailTool } from "../tools/get-verification-email.js";
+import { registerGetSmsCodeTool } from "../tools/get-sms-code.js";
 import { registerCompleteSignupTool } from "../tools/complete-signup.js";
+import { registerGrantOAuthToServiceTool } from "../tools/grant-oauth-to-service.js";
 import { registerPrepareCheckoutTool } from "../tools/prepare-checkout.js";
 import { registerPrepareAmazonCheckoutTool } from "../tools/prepare-amazon-checkout.js";
 import { registerCompletePurchaseTool } from "../tools/complete-purchase.js";
@@ -97,7 +99,17 @@ export function registerAllTools(server: McpServer): void {
   registerSubmitConsentDecisionTool(server);
   registerCheckConsentStatusTool(server);
   registerGetVerificationEmailTool(server);
+  // get_sms_code is the SMS counterpart to get_verification_email. Same
+  // shape (server-side poll, returns the latest unconsumed code) but reads
+  // from the Twilio inbound-SMS pipeline (virtual_phones / sms_messages).
+  registerGetSmsCodeTool(server);
   registerCompleteSignupTool(server);
+  // grant_oauth_to_service sits next to complete_signup because it lives on
+  // the same canonical "agent signs the user up at a new service" path —
+  // just the OAuth branch instead of the email/password branch. Pre-auth
+  // broker (src/lib/oauth-broker/) is currently stubbed; tool is registered
+  // so MCP clients can discover it and start integrating against the surface.
+  registerGrantOAuthToServiceTool(server);
   // Merchant-specific Computer-Use playbooks + the post-checkout reporter that
   // closes the loop. Live in PRIMARY because they sit on the canonical
   // "agent shops at a non-API merchant" flow that v0.2 expects. The universal

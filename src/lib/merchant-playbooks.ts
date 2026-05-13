@@ -65,6 +65,22 @@ export interface MerchantPlaybook {
   steps: PlaybookStep[];
   known_issues: string[];
   fallback_instructions: string;
+  /**
+   * Whether this merchant's signup/checkout flow includes a CAPTCHA the
+   * agent cannot solve. Used by `signup_to_service` to refuse upfront
+   * rather than getting stuck mid-flow.
+   *   - "none"     → no captcha observed in our last test run
+   *   - "signup"   → captcha on account creation only
+   *   - "checkout" → captcha on payment confirmation
+   *   - "both"     → captcha on both
+   */
+  captcha_presence?: "none" | "signup" | "checkout" | "both";
+  /**
+   * Whether this merchant supports passwordless signup via emailed
+   * magic link. When true, signup_to_service will prefer this over
+   * the password flow.
+   */
+  supports_magic_link?: boolean;
 }
 
 /**
@@ -249,6 +265,8 @@ export const MERCHANT_PLAYBOOKS: MerchantPlaybook[] = [
     ],
     fallback_instructions:
       "If any selector fails, find the visually-equivalent element by text content (e.g. button containing 'Place your order'). Amazon's selectors drift across A/B test buckets — always have a text-based fallback ready.",
+    captcha_presence: "checkout",
+    supports_magic_link: false,
   },
 
   // ---------------------------------------------------------------------------
@@ -363,6 +381,8 @@ export const MERCHANT_PLAYBOOKS: MerchantPlaybook[] = [
     ],
     fallback_instructions:
       "Walmart selectors use [data-automation-id] consistently. If a selector fails, search the DOM for an element whose data-automation-id contains the action keyword (e.g. 'checkout', 'atc', 'place-order').",
+    captcha_presence: "signup",
+    supports_magic_link: false,
   },
 
   // ---------------------------------------------------------------------------
@@ -462,6 +482,8 @@ export const MERCHANT_PLAYBOOKS: MerchantPlaybook[] = [
     ],
     fallback_instructions:
       "Best Buy mixes data-track attributes with className selectors. If a selector fails, fall back to button text matching ('Checkout', 'Place Your Order', 'Guest').",
+    captcha_presence: "none",
+    supports_magic_link: false,
   },
 
   // ---------------------------------------------------------------------------
@@ -552,6 +574,8 @@ export const MERCHANT_PLAYBOOKS: MerchantPlaybook[] = [
     ],
     fallback_instructions:
       "eBay's checkout iframe is heavily A/B tested. If the curated selectors miss, find the payment form by its labels: 'Card number', 'Expiration date', 'Security code'.",
+    captcha_presence: "signup",
+    supports_magic_link: false,
   },
 
   // ---------------------------------------------------------------------------
@@ -645,6 +669,8 @@ export const MERCHANT_PLAYBOOKS: MerchantPlaybook[] = [
     ],
     fallback_instructions:
       "Stripe's PaymentElement uses stable input names (cardNumber, cardExpiry, cardCvc). If a curated selector fails, fall back to those name attributes inside any iframe whose src contains 'stripe.com'.",
+    captcha_presence: "none",
+    supports_magic_link: false,
   },
 
   // ---------------------------------------------------------------------------
@@ -793,6 +819,8 @@ export const MERCHANT_PLAYBOOKS: MerchantPlaybook[] = [
     ],
     fallback_instructions:
       "If selectors break, ask the agent to read the page and find the 'Add to credit balance' / 'Add credits' button manually, then locate the Stripe iframe by `iframe[src*='stripe.com']` and operate inside it. The amount input is the only field outside the iframe.",
+    captcha_presence: "none",
+    supports_magic_link: false,
   },
 
   // ---------------------------------------------------------------------------
@@ -935,6 +963,8 @@ export const MERCHANT_PLAYBOOKS: MerchantPlaybook[] = [
     ],
     fallback_instructions:
       "If selectors break, ask the agent to read the page and find the 'Add credits' button manually, then locate the Stripe iframe by `iframe[src*='stripe.com']` and operate inside it.",
+    captcha_presence: "none",
+    supports_magic_link: false,
   },
 
   // ---------------------------------------------------------------------------
@@ -1089,6 +1119,8 @@ export const MERCHANT_PLAYBOOKS: MerchantPlaybook[] = [
     ],
     fallback_instructions:
       "If selectors break, ask the agent to read the page and find the 'Upgrade' / 'Buy more' button manually, then locate the Stripe iframe by `iframe[src*='stripe.com']` and operate inside it. For plan changes, always verify the billing cadence (monthly/annual) before clicking submit.",
+    captcha_presence: "none",
+    supports_magic_link: false,
   },
 
   // ---------------------------------------------------------------------------
@@ -1239,6 +1271,8 @@ export const MERCHANT_PLAYBOOKS: MerchantPlaybook[] = [
     ],
     fallback_instructions:
       "If selectors break, ask the agent to read the page and find the 'Continue to payment' / 'Upgrade my account' button manually. The 2FA step is the single most common failure point — if the TOTP secret isn't available, ABORT cleanly rather than retrying.",
+    captcha_presence: "none",
+    supports_magic_link: false,
   },
 
   // ---------------------------------------------------------------------------
@@ -1383,12 +1417,32 @@ export const MERCHANT_PLAYBOOKS: MerchantPlaybook[] = [
     ],
     fallback_instructions:
       "If selectors break, ask the agent to read the page and find the 'Upgrade' / 'Get Pro' button manually, then locate the Stripe iframe by `iframe[src*='stripe.com']` and operate inside it. The OAuth step is the highest-risk failure point — verify the provider matches the managed account before clicking.",
+    captcha_presence: "none",
+    supports_magic_link: false,
   },
 ];
 
 // ---------------------------------------------------------------------------
 // Lookup helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Return `false` if the playbook's `captcha_presence` indicates a CAPTCHA
+ * will block the given phase. Used by `signup_to_service` and
+ * `prepare_checkout` to refuse upfront rather than getting stuck mid-flow.
+ *
+ * Missing `captcha_presence` is treated as "none" (no captcha known) — the
+ * field is optional so legacy / generic playbooks default to "can run".
+ */
+export function playbookCanRunHeadless(
+  playbook: MerchantPlaybook,
+  phase: "signup" | "checkout",
+): boolean {
+  const presence = playbook.captcha_presence ?? "none";
+  if (presence === "none") return true;
+  if (presence === "both") return false;
+  return presence !== phase;
+}
 
 /**
  * Best-effort lookup of a curated playbook for a given merchant input.
