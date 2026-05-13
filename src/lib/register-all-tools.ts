@@ -34,6 +34,7 @@ import { registerSubmitConsentDecisionTool } from "../tools/submit-consent.js";
 import { registerCheckConsentStatusTool } from "../tools/check-consent-status.js";
 import { registerGetVerificationEmailTool } from "../tools/get-verification-email.js";
 import { registerCompleteSignupTool } from "../tools/complete-signup.js";
+import { registerPrepareCheckoutTool } from "../tools/prepare-checkout.js";
 import { registerPrepareAmazonCheckoutTool } from "../tools/prepare-amazon-checkout.js";
 import { registerCompletePurchaseTool } from "../tools/complete-purchase.js";
 
@@ -98,7 +99,10 @@ export function registerAllTools(server: McpServer): void {
   registerCompleteSignupTool(server);
   // Merchant-specific Computer-Use playbooks + the post-checkout reporter that
   // closes the loop. Live in PRIMARY because they sit on the canonical
-  // "agent shops at a non-API merchant" flow that v0.2 expects.
+  // "agent shops at a non-API merchant" flow that v0.2 expects. The universal
+  // `prepare_checkout` is registered BEFORE the Amazon-only legacy alias so
+  // MCP clients listing tools encounter the generalized surface first.
+  registerPrepareCheckoutTool(server);
   registerPrepareAmazonCheckoutTool(server);
   registerCompletePurchaseTool(server);
 
