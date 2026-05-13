@@ -1,7 +1,7 @@
 // `spendexpay-mcp start` — thin wrapper that boots the stdio MCP server.
 //
 // When `init` writes `.mcp.json`, it sets `command = "npx"` and
-// `args = ["-y", "@spendexpay/mcp", "start"]`. The host agent (Claude Code,
+// `args = ["-y", "@spendexai/mcp", "start"]`. The host agent (Claude Code,
 // Cursor, …) spawns that command, which lands here.
 //
 // All this file does is dynamically import the real server entrypoint

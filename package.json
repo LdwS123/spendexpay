@@ -4,9 +4,7 @@
   "description": "Spendex Pay — the wallet for your AI agent. MCP server that lets Claude Code, Cursor, ChatGPT, and any MCP-compatible agent sign up to and pay for any service.",
   "type": "module",
   "bin": {
-    "spendex": "./dist/index.js",
-    "@spendexai/mcp": "./dist/index.js",
-    "spendexpay-mcp": "./dist/cli/index.js"
+    "spendexai": "./dist/cli/index.js"
   },
   "main": "./dist/index.js",
   "files": [
@@ -22,11 +20,7 @@
     "start:http": "node dist/http-server.js",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "prepublishOnly": "npm run build && npm test",
-    "finetune:export": "tsx scripts/finetune/01-export-dataset.ts",
-    "finetune:synth": "tsx scripts/finetune/02-synthesize-examples.ts",
-    "finetune:prepare": "tsx scripts/finetune/03-prepare-mlx-data.ts",
-    "finetune:eval": "tsx scripts/finetune/05-evaluate.ts"
+    "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [
     "mcp",

@@ -10,7 +10,7 @@ interface Props {
 export default function TokensClient({ hasToken: initialHasToken, createdAt }: Props) {
   const [hasToken, setHasToken] = useState(initialHasToken);
   const [newToken, setNewToken] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"token" | "command" | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,8 +54,14 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
 
   function copy(val: string) {
     navigator.clipboard.writeText(val);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopied("token");
+    setTimeout(() => setCopied(null), 2000);
+  }
+
+  function copyCommand(val: string) {
+    navigator.clipboard.writeText(val);
+    setCopied("command");
+    setTimeout(() => setCopied(null), 2000);
   }
 
   const createdDate = createdAt
@@ -114,11 +120,36 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
               <button
                 type="button"
                 onClick={() => copy(newToken)}
-                aria-label={copied ? "Token copied to clipboard" : "Copy MCP token"}
+                aria-label={copied === "token" ? "Token copied to clipboard" : "Copy MCP token"}
                 className="text-xs font-semibold text-[#6D5BFF] hover:text-[#3B82F6] shrink-0 transition-colors px-2 py-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF]"
               >
-                {copied ? "Copied!" : "Copy"}
+                {copied === "token" ? "Copied!" : "Copy"}
               </button>
+            </div>
+
+            {/* One-line install for Claude Code / Cursor */}
+            <div className="mt-4">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-spendex-purple/80">
+                Install in 30 seconds
+              </p>
+              <div className="flex items-stretch gap-2 rounded-lg bg-[#0D0F14] px-3 py-2.5">
+                <code className="flex-1 text-[12px] font-mono text-white/90 truncate" title={`npx @spendexai/mcp init --token ${newToken}`}>
+                  <span className="text-white/40 select-none">$ </span>
+                  npx @spendexai/mcp init --token {newToken.slice(0, 8)}…
+                </code>
+                <button
+                  type="button"
+                  onClick={() => copyCommand(`npx @spendexai/mcp init --token ${newToken}`)}
+                  aria-label={copied === "command" ? "Install command copied" : "Copy install command"}
+                  className="shrink-0 rounded-md bg-spendex-purple px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#5b48ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                >
+                  {copied === "command" ? "Copied!" : "Copy"}
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] text-slate-500">
+                Paste this in the terminal at your project root. Restart your agent and try:{" "}
+                <em className="text-slate-700">&ldquo;Top up my OpenAI for $20&rdquo;</em>.
+              </p>
             </div>
           </div>
         )}
@@ -185,12 +216,23 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
 
         {/* Usage snippet */}
         <div className="rounded-xl bg-[#0D0F14] p-5">
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[#6D5BFF]">
-            Cursor / Claude config
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-spendex-purple">
+            Generated .mcp.json
           </p>
-          <pre className="text-[10px] text-white/40 font-mono leading-relaxed whitespace-pre">
-            {`// .mcp.json\n{\n  "mcpServers": {\n    "spendex": {\n      "command": "npx",\n      "args": ["-y", "@spendexai/mcp"],\n      "env": { "SPENDEX_TOKEN": "spx_..." }\n    }\n  }\n}`}
+          <pre className="text-[11px] text-white/60 font-mono leading-relaxed whitespace-pre overflow-x-auto">
+{`{
+  "mcpServers": {
+    "spendexpay": {
+      "command": "npx",
+      "args": ["-y", "@spendexai/mcp", "start"],
+      "env": { "SPENDEX_MCP_TOKEN": "spx_..." }
+    }
+  }
+}`}
           </pre>
+          <p className="mt-3 text-[11px] text-white/40">
+            The CLI writes this for you — no manual edit needed.
+          </p>
         </div>
       </div>
     </main>
