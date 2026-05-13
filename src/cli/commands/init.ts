@@ -1,8 +1,8 @@
 // `spendexpay-mcp init` — interactive bootstrap for the user's first install.
 //
-// Goal: a brand new user runs `npx @spendexai/mcp init`, pastes their Spendex
+// Goal: a brand new user runs `npx @spendexpay/mcp init`, pastes their Spendex
 // MCP token, and ends up with a working `.mcp.json` in their project that
-// launches the spendexpay server via `npx -y @spendexai/mcp start`. The whole
+// launches the spendexpay server via `npx -y @spendexpay/mcp start`. The whole
 // flow must take under a minute; that's the V1 wow moment.
 //
 // IMPORTANT: this file runs in CLI context, NOT inside the MCP server process.
@@ -57,7 +57,7 @@ interface McpJsonShape {
  * Builds the `.mcp.json` server config for spendexpay. The shape matches what
  * Claude Code, Cursor, and Windsurf all read.
  *
- * We use `npx -y @spendexai/mcp start` (NOT `node ./dist/index.js`) because
+ * We use `npx -y @spendexpay/mcp start` (NOT `node ./dist/index.js`) because
  * the user installing via `npx` likely doesn't have the package cloned — npm
  * is the only delivery mechanism. The `-y` skips the "install this package?"
  * prompt that npx asks on first run.
@@ -65,7 +65,7 @@ interface McpJsonShape {
 export function buildServerConfig(token: string): McpServerConfig {
   return {
     command: "npx",
-    args: ["-y", "@spendexai/mcp", "start"],
+    args: ["-y", "@spendexpay/mcp", "start"],
     env: {
       SPENDEX_MCP_TOKEN: token,
     },

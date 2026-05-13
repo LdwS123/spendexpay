@@ -69,7 +69,7 @@ describe("buildServerConfig", () => {
     const cfg = buildServerConfig(VALID_TOKEN);
     expect(cfg).toEqual({
       command: "npx",
-      args: ["-y", "@spendexai/mcp", "start"],
+      args: ["-y", "@spendexpay/mcp", "start"],
       env: { SPENDEX_MCP_TOKEN: VALID_TOKEN },
     });
   });
@@ -104,7 +104,7 @@ describe("runInit — happy paths", () => {
     expect(parsed.mcpServers.spendexpay.command).toBe("npx");
     expect(parsed.mcpServers.spendexpay.args).toEqual([
       "-y",
-      "@spendexai/mcp",
+      "@spendexpay/mcp",
       "start",
     ]);
     expect(parsed.mcpServers.spendexpay.env.SPENDEX_MCP_TOKEN).toBe(VALID_TOKEN);

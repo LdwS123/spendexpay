@@ -133,13 +133,13 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
                 Install in 30 seconds
               </p>
               <div className="flex items-stretch gap-2 rounded-lg bg-[#0D0F14] px-3 py-2.5">
-                <code className="flex-1 text-[12px] font-mono text-white/90 truncate" title={`npx @spendexai/mcp init --token ${newToken}`}>
+                <code className="flex-1 text-[12px] font-mono text-white/90 truncate" title={`npx @spendexpay/mcp init --token ${newToken}`}>
                   <span className="text-white/40 select-none">$ </span>
-                  npx @spendexai/mcp init --token {newToken.slice(0, 8)}…
+                  npx @spendexpay/mcp init --token {newToken.slice(0, 8)}…
                 </code>
                 <button
                   type="button"
-                  onClick={() => copyCommand(`npx @spendexai/mcp init --token ${newToken}`)}
+                  onClick={() => copyCommand(`npx @spendexpay/mcp init --token ${newToken}`)}
                   aria-label={copied === "command" ? "Install command copied" : "Copy install command"}
                   className="shrink-0 rounded-md bg-spendex-purple px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#5b48ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                 >
@@ -224,7 +224,7 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
   "mcpServers": {
     "spendexpay": {
       "command": "npx",
-      "args": ["-y", "@spendexai/mcp", "start"],
+      "args": ["-y", "@spendexpay/mcp", "start"],
       "env": { "SPENDEX_MCP_TOKEN": "spx_..." }
     }
   }

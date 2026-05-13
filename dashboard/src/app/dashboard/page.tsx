@@ -431,7 +431,7 @@ export default async function DashboardPage() {
                     Install
                   </p>
                   <pre className="mt-4 whitespace-pre-wrap break-all font-mono text-[12px] leading-6 text-white/78">
-                    <span className="text-spendex-purple">$</span> npx @spendexai/mcp
+                    <span className="text-spendex-purple">$</span> npx @spendexpay/mcp
                   </pre>
                   <div className="mt-5 space-y-2 border-t border-white/8 pt-5 text-xs text-white/45">
                     <p>Auth: MCP token</p>
