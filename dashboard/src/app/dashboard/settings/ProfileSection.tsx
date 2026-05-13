@@ -85,15 +85,15 @@ export default function ProfileSection() {
 
   const saveCls =
     saveState === "saved"
-      ? "bg-[#00e5b4]/15 text-[#00a882] cursor-default"
+      ? "bg-[#6D5BFF]/15 text-[#3B82F6] cursor-default"
       : saveState === "saving"
-        ? "bg-[#00e5b4]/60 text-[#070d18] cursor-not-allowed"
-        : "bg-[#00e5b4] hover:bg-[#00c49a] text-[#070d18]";
+        ? "bg-[#6D5BFF]/60 text-[#0D0F14] cursor-not-allowed"
+        : "bg-[#6D5BFF] hover:bg-[#5b48ff] text-[#0D0F14]";
 
   return (
     <form onSubmit={handleSave}>
       <div className="bg-white rounded-xl border border-slate-100 p-6">
-        <h2 className="text-sm font-semibold text-[#0a1220] mb-1">Profile</h2>
+        <h2 className="text-sm font-semibold text-[#0D0F14] mb-1">Profile</h2>
         <p className="text-xs text-slate-400 mb-5">
           Your name and phone are synced to your Spendex virtual card.
         </p>
@@ -112,7 +112,7 @@ export default function ProfileSection() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Jane Doe"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#00e5b4] focus:border-[#00e5b4]"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#6D5BFF] focus:border-[#6D5BFF]"
             />
           </div>
 
@@ -150,7 +150,7 @@ export default function ProfileSection() {
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="+33 6 00 00 00 00"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#00e5b4] focus:border-[#00e5b4]"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#6D5BFF] focus:border-[#6D5BFF]"
             />
           </div>
         </div>

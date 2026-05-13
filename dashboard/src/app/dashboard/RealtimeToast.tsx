@@ -46,7 +46,7 @@ function Toast({
 
   return (
     <div className="realtime-toast-enter pointer-events-auto rounded-xl border border-slate-100 bg-white shadow-lg shadow-slate-900/5 px-4 py-3 flex items-start gap-3">
-      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#00e5b4]/15 text-[#00a882]">
+      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#6D5BFF]/15 text-[#3B82F6]">
         <svg
           className="h-3 w-3"
           fill="none"
@@ -59,7 +59,7 @@ function Toast({
         </svg>
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-[#0a1220] leading-tight">{toast.title}</p>
+        <p className="text-sm font-semibold text-[#0D0F14] leading-tight">{toast.title}</p>
         {toast.body && (
           <p className="text-xs text-slate-500 mt-0.5 leading-snug">{toast.body}</p>
         )}

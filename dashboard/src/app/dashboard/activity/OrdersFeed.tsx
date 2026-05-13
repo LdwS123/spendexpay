@@ -143,12 +143,12 @@ function OrderRow({ order }: { order: Order }) {
           ? formatAmount(order.amount_usd, order.currency)
           : "no amount"
       }`}
-      className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4 border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 transition-colors cursor-pointer group min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4] focus-visible:ring-inset"
+      className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4 border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 transition-colors cursor-pointer group min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF] focus-visible:ring-inset"
     >
       <ProductThumb src={order.product_image_url} alt={name} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-[#0a1220] truncate max-w-md">
+          <span className="text-sm font-medium text-[#0D0F14] truncate max-w-md">
             {name}
           </span>
           <ServiceBadge service={order.service} />
@@ -165,17 +165,17 @@ function OrderRow({ order }: { order: Order }) {
         </p>
       </div>
       <div className="hidden sm:flex flex-col items-end shrink-0">
-        <span className="text-base font-semibold text-[#0a1220] tabular-nums">
+        <span className="text-base font-semibold text-[#0D0F14] tabular-nums">
           {order.amount_usd != null
             ? formatAmount(order.amount_usd, order.currency)
             : "—"}
         </span>
-        <span className="text-[11px] text-[#00b894] group-hover:text-[#0a1220] transition-colors mt-1">
+        <span className="text-[11px] text-[#6D5BFF] group-hover:text-[#0D0F14] transition-colors mt-1">
           View details →
         </span>
       </div>
       <div className="flex sm:hidden flex-col items-end shrink-0">
-        <span className="text-sm font-semibold text-[#0a1220] tabular-nums">
+        <span className="text-sm font-semibold text-[#0D0F14] tabular-nums">
           {order.amount_usd != null
             ? formatAmount(order.amount_usd, order.currency)
             : "—"}

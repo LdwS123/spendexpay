@@ -19,7 +19,7 @@ export default function OpengraphImage() {
           padding: "80px 96px",
           // Satori can't parse the `background` shorthand with multiple gradients
           // + a hex fallback — split into backgroundColor + backgroundImage.
-          backgroundColor: "#070d18",
+          backgroundColor: "#0D0F14",
           backgroundImage:
             "radial-gradient(circle at 80% 20%, rgba(0,229,180,0.18) 0%, rgba(0,229,180,0) 55%), radial-gradient(circle at 10% 90%, rgba(0,229,180,0.10) 0%, rgba(0,229,180,0) 50%)",
           fontFamily: "system-ui, -apple-system, sans-serif",
@@ -36,7 +36,7 @@ export default function OpengraphImage() {
               border: "1px solid rgba(0,229,180,0.25)",
               borderRadius: 9999,
               background: "rgba(0,229,180,0.08)",
-              color: "#00e5b4",
+              color: "#6D5BFF",
               fontSize: 22,
               fontWeight: 600,
               letterSpacing: 0.4,
@@ -47,7 +47,7 @@ export default function OpengraphImage() {
                 width: 10,
                 height: 10,
                 borderRadius: 9999,
-                background: "#00e5b4",
+                background: "#6D5BFF",
               }}
             />
             Identity + Wallet · Agent-native
@@ -67,14 +67,14 @@ export default function OpengraphImage() {
             }}
           >
             Spendex&nbsp;
-            <span style={{ color: "#00e5b4" }}>Pay</span>
+            <span style={{ color: "#6D5BFF" }}>Pay</span>
           </div>
           <div
             style={{
               display: "flex",
               fontSize: 48,
               fontWeight: 500,
-              color: "#00e5b4",
+              color: "#6D5BFF",
               letterSpacing: -1,
               lineHeight: 1.15,
             }}
@@ -107,7 +107,7 @@ export default function OpengraphImage() {
           }}
         >
           <span>spendexai.com</span>
-          <span style={{ color: "#00e5b4" }}>→ install in 30s</span>
+          <span style={{ color: "#6D5BFF" }}>→ install in 30s</span>
         </div>
       </div>
     ),

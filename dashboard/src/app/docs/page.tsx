@@ -20,10 +20,10 @@ export const metadata: Metadata = {
 
 function Navbar() {
   return (
-    <header className="fixed top-0 inset-x-0 z-50 border-b border-white/5 bg-[#070d18]/80 backdrop-blur-md">
+    <header className="fixed top-0 inset-x-0 z-50 border-b border-white/5 bg-[#0D0F14]/80 backdrop-blur-md">
       <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="text-lg font-bold tracking-tight text-white">
-          Spendex <span className="text-[#00e5b4]">Pay</span>
+          Spendex <span className="text-[#6D5BFF]">Pay</span>
         </Link>
 
         <div className="flex items-center gap-6">
@@ -43,7 +43,7 @@ function Navbar() {
           </a>
           <Link
             href="/login"
-            className="rounded-lg bg-[#00e5b4] px-4 py-1.5 text-sm font-semibold text-[#070d18] transition-opacity hover:opacity-90"
+            className="rounded-lg bg-[#6D5BFF] px-4 py-1.5 text-sm font-semibold text-[#0D0F14] transition-opacity hover:opacity-90"
           >
             Get started →
           </Link>
@@ -70,7 +70,7 @@ function Sidebar() {
   return (
     <aside className="hidden lg:block">
       <div className="sticky top-24">
-        <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-[#00e5b4]">
+        <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-[#6D5BFF]">
           Documentation
         </p>
         <nav className="flex flex-col gap-1.5 border-l border-white/8 pl-4">
@@ -78,15 +78,15 @@ function Sidebar() {
             <a
               key={s.id}
               href={`#${s.id}`}
-              className="group relative -ml-4 border-l border-transparent pl-4 py-1 text-sm text-white/50 transition-colors hover:text-white hover:border-[#00e5b4]/60"
+              className="group relative -ml-4 border-l border-transparent pl-4 py-1 text-sm text-white/50 transition-colors hover:text-white hover:border-[#6D5BFF]/60"
             >
               {s.label}
             </a>
           ))}
         </nav>
 
-        <div className="mt-10 rounded-xl border border-[#00e5b4]/15 bg-[#00e5b4]/5 p-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#00e5b4]">
+        <div className="mt-10 rounded-xl border border-[#6D5BFF]/15 bg-[#6D5BFF]/5 p-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#6D5BFF]">
             Need help?
           </p>
           <p className="mt-2 text-xs leading-relaxed text-white/50">
@@ -104,12 +104,12 @@ function SectionHeading({ id, kicker, title }: { id: string; kicker?: string; ti
   return (
     <div className="mb-8 scroll-mt-24" id={id}>
       {kicker ? (
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#00e5b4]">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#6D5BFF]">
           {kicker}
         </p>
       ) : null}
       <h2 className="text-3xl font-bold text-white sm:text-4xl">
-        <span className="inline-block border-b-2 border-[#00e5b4]/60 pb-1">
+        <span className="inline-block border-b-2 border-[#6D5BFF]/60 pb-1">
           {title}
         </span>
       </h2>
@@ -127,7 +127,7 @@ function SubHeading({ children }: { children: React.ReactNode }) {
 
 function InlineCode({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded-md border border-white/8 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[0.85em] text-[#00e5b4]">
+    <code className="rounded-md border border-white/8 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[0.85em] text-[#6D5BFF]">
       {children}
     </code>
   );
@@ -152,7 +152,7 @@ function AgentInstall({
     <div className="my-5 overflow-hidden rounded-2xl border border-white/8 bg-white/[0.02]">
       <div className="border-b border-white/8 px-6 py-4">
         <div className="flex items-center gap-3">
-          <span className="rounded-md bg-[#00e5b4]/10 px-2 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#00e5b4]">
+          <span className="rounded-md bg-[#6D5BFF]/10 px-2 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#6D5BFF]">
             agent
           </span>
           <span className="text-base font-semibold text-white">{name}</span>
@@ -202,7 +202,7 @@ function AgentInstall({
 
 export default function DocsPage() {
   return (
-    <div className="min-h-screen bg-[#070d18] text-white antialiased">
+    <div className="min-h-screen bg-[#0D0F14] text-white antialiased">
       <Navbar />
 
       <main className="pt-14">
@@ -212,15 +212,15 @@ export default function DocsPage() {
             aria-hidden
             className="pointer-events-none absolute inset-0 flex items-center justify-center"
           >
-            <div className="h-[400px] w-[700px] rounded-full bg-[#00e5b4]/5 blur-[120px]" />
+            <div className="h-[400px] w-[700px] rounded-full bg-[#6D5BFF]/5 blur-[120px]" />
           </div>
           <div className="relative mx-auto max-w-6xl px-6 py-16">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#00e5b4]/20 bg-[#00e5b4]/5 px-3 py-1 text-xs font-medium text-[#00e5b4]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#00e5b4]" />
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#6D5BFF]/20 bg-[#6D5BFF]/5 px-3 py-1 text-xs font-medium text-[#6D5BFF]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#6D5BFF]" />
               Documentation · v0.1
             </div>
             <h1 className="max-w-2xl text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
-              Build agents that <span className="text-[#00e5b4]">work autonomously</span>
+              Build agents that <span className="text-[#6D5BFF]">work autonomously</span>
             </h1>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-white/50">
               Spendex Pay is the agent that lives in your agents. Install it in Claude Code, Cursor, ChatGPT, or any MCP host — your agents sign up for the services they need and pay for them, within your rules. You manage one relationship. We manage the rest.
@@ -243,7 +243,7 @@ export default function DocsPage() {
               <ol className="mt-6 space-y-4">
                 <li className="rounded-xl border border-white/8 bg-white/[0.02] p-5">
                   <div className="flex items-baseline gap-3">
-                    <span className="font-mono text-sm font-bold text-[#00e5b4]">01</span>
+                    <span className="font-mono text-sm font-bold text-[#6D5BFF]">01</span>
                     <h4 className="text-base font-semibold text-white">Install Spendex MCP</h4>
                   </div>
                   <p className="mt-2 ml-9 text-sm leading-relaxed text-white/50">
@@ -273,12 +273,12 @@ export default function DocsPage() {
                 </li>
                 <li className="rounded-xl border border-white/8 bg-white/[0.02] p-5">
                   <div className="flex items-baseline gap-3">
-                    <span className="font-mono text-sm font-bold text-[#00e5b4]">02</span>
+                    <span className="font-mono text-sm font-bold text-[#6D5BFF]">02</span>
                     <h4 className="text-base font-semibold text-white">Add a funding card</h4>
                   </div>
                   <p className="mt-2 ml-9 text-sm leading-relaxed text-white/50">
                     Connect your real card via Stripe from the{" "}
-                    <Link href="/dashboard" className="text-[#00e5b4] underline decoration-[#00e5b4]/30 underline-offset-2 hover:decoration-[#00e5b4]">
+                    <Link href="/dashboard" className="text-[#6D5BFF] underline decoration-[#6D5BFF]/30 underline-offset-2 hover:decoration-[#6D5BFF]">
                       dashboard
                     </Link>
                     . This funds your virtual wallet — your agent draws from the wallet, never from your real card directly.
@@ -286,7 +286,7 @@ export default function DocsPage() {
                 </li>
                 <li className="rounded-xl border border-white/8 bg-white/[0.02] p-5">
                   <div className="flex items-baseline gap-3">
-                    <span className="font-mono text-sm font-bold text-[#00e5b4]">03</span>
+                    <span className="font-mono text-sm font-bold text-[#6D5BFF]">03</span>
                     <h4 className="text-base font-semibold text-white">Configure consent + rules</h4>
                   </div>
                   <p className="mt-2 ml-9 text-sm leading-relaxed text-white/50">
@@ -295,9 +295,9 @@ export default function DocsPage() {
                 </li>
               </ol>
 
-              <div className="my-6 rounded-xl border border-[#00e5b4]/15 bg-[#00e5b4]/[0.03] p-5">
+              <div className="my-6 rounded-xl border border-[#6D5BFF]/15 bg-[#6D5BFF]/[0.03] p-5">
                 <p className="text-sm leading-relaxed text-white/70">
-                  <span className="font-semibold text-[#00e5b4]">That&apos;s it.</span>{" "}
+                  <span className="font-semibold text-[#6D5BFF]">That&apos;s it.</span>{" "}
                   Your agent can now sign up for Vercel, top-up Modal credits, upgrade OpenAI plan — anything — autonomously, within your envelope.
                 </p>
               </div>
@@ -307,9 +307,9 @@ export default function DocsPage() {
             <section className="mb-20">
               <SectionHeading id="install" kicker="02" title="Install in your agent" />
 
-              <div className="my-6 rounded-xl border border-[#00e5b4]/15 bg-[#00e5b4]/[0.05] p-5">
+              <div className="my-6 rounded-xl border border-[#6D5BFF]/15 bg-[#6D5BFF]/[0.05] p-5">
                 <p className="text-sm leading-relaxed text-white/75">
-                  <span className="font-semibold text-[#00e5b4]">Once Spendex is installed,</span>{" "}
+                  <span className="font-semibold text-[#6D5BFF]">Once Spendex is installed,</span>{" "}
                   your agent gets these tools: <InlineCode>pay_for_service</InlineCode>, <InlineCode>signup_to_service</InlineCode>, <InlineCode>request_user_consent</InlineCode>, <InlineCode>submit_consent_decision</InlineCode>, <InlineCode>check_balance</InlineCode>, <InlineCode>check_spending_rules</InlineCode>. The host agent (Claude Code, Cursor, etc.) calls them transparently as needed.
                 </p>
               </div>
@@ -380,14 +380,14 @@ export default function DocsPage() {
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-xl border border-white/8 bg-white/[0.02] p-5">
-                  <p className="font-mono text-xs text-[#00e5b4]">native_api</p>
+                  <p className="font-mono text-xs text-[#6D5BFF]">native_api</p>
                   <h4 className="mt-2 text-base font-semibold text-white">Native API mode</h4>
                   <p className="mt-2 text-sm leading-relaxed text-white/55">
                     For the top services we integrate (Vercel, Modal, Anthropic — soon), Spendex calls their API directly with your OAuth token. No card details ever leave the wallet, faster settlement, richer receipts.
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/8 bg-white/[0.02] p-5">
-                  <p className="font-mono text-xs text-[#00e5b4]">card_reveal</p>
+                  <p className="font-mono text-xs text-[#6D5BFF]">card_reveal</p>
                   <h4 className="mt-2 text-base font-semibold text-white">Card reveal mode (universal)</h4>
                   <p className="mt-2 text-sm leading-relaxed text-white/55">
                     For every other service, Spendex exposes the virtual card details to the agent via the <InlineCode>pay_for_service</InlineCode> tool. The agent uses its own capabilities (Computer Use in Claude Code, browser tool in Cursor, etc.) to finalize the payment on the merchant&apos;s checkout.
@@ -395,9 +395,9 @@ export default function DocsPage() {
                 </div>
               </div>
 
-              <div className="mt-6 rounded-xl border border-[#00e5b4]/15 bg-[#00e5b4]/[0.03] p-5">
+              <div className="mt-6 rounded-xl border border-[#6D5BFF]/15 bg-[#6D5BFF]/[0.03] p-5">
                 <p className="text-sm leading-relaxed text-white/70">
-                  <span className="font-semibold text-[#00e5b4]">Either way, you do nothing.</span>{" "}
+                  <span className="font-semibold text-[#6D5BFF]">Either way, you do nothing.</span>{" "}
                   The agent handles the payment. You set the rules once and the wallet enforces them at the card level.
                 </p>
               </div>
@@ -422,19 +422,19 @@ export default function DocsPage() {
                     <tr>
                       <td className="px-6 py-3 text-sm font-medium text-white">Vercel</td>
                       <td className="px-6 py-3 text-sm text-white/55">Soon (v2)</td>
-                      <td className="px-6 py-3 text-sm text-[#00e5b4]">Available</td>
+                      <td className="px-6 py-3 text-sm text-[#6D5BFF]">Available</td>
                     </tr>
                     <tr>
                       <td className="px-6 py-3 text-sm font-medium text-white">Modal</td>
                       <td className="px-6 py-3 text-sm text-white/55">Soon (v2)</td>
-                      <td className="px-6 py-3 text-sm text-[#00e5b4]">Available</td>
+                      <td className="px-6 py-3 text-sm text-[#6D5BFF]">Available</td>
                     </tr>
                     <tr>
                       <td className="px-6 py-3 text-sm font-medium text-white">
                         OpenAI, Anthropic, Replicate, Fly.io, Railway, Render, GitHub, AWS, GCP, and the rest of the internet
                       </td>
                       <td className="px-6 py-3 text-sm text-white/40">—</td>
-                      <td className="px-6 py-3 text-sm text-[#00e5b4]">Available</td>
+                      <td className="px-6 py-3 text-sm text-[#6D5BFF]">Available</td>
                     </tr>
                   </tbody>
                 </table>
@@ -477,27 +477,27 @@ Reply with A, B, C (with an amount), or D.`}
               <SubHeading>How the round-trip works</SubHeading>
               <ol className="space-y-3 text-sm leading-relaxed text-white/60">
                 <li className="flex gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00e5b4]" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6D5BFF]" />
                   Agent calls <InlineCode>request_user_consent</InlineCode> with the action context.
                 </li>
                 <li className="flex gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00e5b4]" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6D5BFF]" />
                   Spendex returns a structured prompt and a <InlineCode>consent_id</InlineCode>.
                 </li>
                 <li className="flex gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00e5b4]" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6D5BFF]" />
                   The host agent renders the prompt in your conversation.
                 </li>
                 <li className="flex gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00e5b4]" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6D5BFF]" />
                   You reply with A, B, C (and a cap), or D.
                 </li>
                 <li className="flex gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00e5b4]" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6D5BFF]" />
                   Agent calls <InlineCode>submit_consent_decision</InlineCode> with the <InlineCode>consent_id</InlineCode> and your choice.
                 </li>
                 <li className="flex gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00e5b4]" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6D5BFF]" />
                   Spendex authorizes the payment (or records the decline) and the agent proceeds.
                 </li>
               </ol>
@@ -642,21 +642,21 @@ submit_consent_decision({
 
               <div className="mt-6 grid gap-4 sm:grid-cols-3">
                 <div className="rounded-xl border border-white/8 bg-white/[0.02] p-5">
-                  <p className="font-mono text-xs text-[#00e5b4]">max_auto_charge_usd</p>
+                  <p className="font-mono text-xs text-[#6D5BFF]">max_auto_charge_usd</p>
                   <h4 className="mt-2 text-base font-semibold text-white">Per-transaction cap</h4>
                   <p className="mt-2 text-sm leading-relaxed text-white/50">
                     The most a single charge can be. Anything above is declined at the card level — the merchant sees a decline, your agent sees the error.
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/8 bg-white/[0.02] p-5">
-                  <p className="font-mono text-xs text-[#00e5b4]">max_amount_per_month</p>
+                  <p className="font-mono text-xs text-[#6D5BFF]">max_amount_per_month</p>
                   <h4 className="mt-2 text-base font-semibold text-white">Monthly budget</h4>
                   <p className="mt-2 text-sm leading-relaxed text-white/50">
                     A hard ceiling across all services for the calendar month. Once hit, every subsequent authorization is declined until the month resets or you raise the cap.
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/8 bg-white/[0.02] p-5">
-                  <p className="font-mono text-xs text-[#00e5b4]">allowed_merchants</p>
+                  <p className="font-mono text-xs text-[#6D5BFF]">allowed_merchants</p>
                   <h4 className="mt-2 text-base font-semibold text-white">Merchant allowlist</h4>
                   <p className="mt-2 text-sm leading-relaxed text-white/50">
                     Restrict the card to a specific MCC range (dev tools / cloud) or a named allowlist. Charges from anything else are declined automatically.
@@ -664,9 +664,9 @@ submit_consent_decision({
                 </div>
               </div>
 
-              <div className="mt-6 rounded-xl border border-[#00e5b4]/15 bg-[#00e5b4]/[0.03] p-5">
+              <div className="mt-6 rounded-xl border border-[#6D5BFF]/15 bg-[#6D5BFF]/[0.03] p-5">
                 <p className="text-sm leading-relaxed text-white/70">
-                  <span className="font-semibold text-[#00e5b4]">Set once, forget.</span>{" "}
+                  <span className="font-semibold text-[#6D5BFF]">Set once, forget.</span>{" "}
                   Limits are wired directly into Stripe Issuing — there&apos;s no application layer to bypass, no daily check-in, no surveillance. The envelope holds itself.
                 </p>
               </div>
@@ -676,16 +676,16 @@ submit_consent_decision({
             <section className="mb-20">
               <SectionHeading id="security" kicker="07" title="Security" />
 
-              <div className="my-5 rounded-xl border border-[#00e5b4]/15 bg-[#00e5b4]/[0.03] p-5">
+              <div className="my-5 rounded-xl border border-[#6D5BFF]/15 bg-[#6D5BFF]/[0.03] p-5">
                 <p className="text-sm leading-relaxed text-white/70">
-                  <span className="font-semibold text-[#00e5b4]">Spendex never holds the funds.</span>{" "}
+                  <span className="font-semibold text-[#6D5BFF]">Spendex never holds the funds.</span>{" "}
                   Your funding card (Stripe Customer) is the source. The virtual card and rules sit as a layer between your agent and merchants — your money stays in your account until a real, approved authorization clears.
                 </p>
               </div>
 
               <SubHeading>Card details</SubHeading>
               <p className="text-sm leading-relaxed text-white/60">
-                The full PAN, expiry, and CVC are revealed only via the <Link href="/dashboard/services" className="text-[#00e5b4] underline decoration-[#00e5b4]/30 underline-offset-2 hover:decoration-[#00e5b4]">Services page</Link> behind your authenticated session, using Stripe&apos;s ephemeral-key flow. The numbers never sit in our database in plaintext — we hold a Stripe card ID and your encrypted metadata only.
+                The full PAN, expiry, and CVC are revealed only via the <Link href="/dashboard/services" className="text-[#6D5BFF] underline decoration-[#6D5BFF]/30 underline-offset-2 hover:decoration-[#6D5BFF]">Services page</Link> behind your authenticated session, using Stripe&apos;s ephemeral-key flow. The numbers never sit in our database in plaintext — we hold a Stripe card ID and your encrypted metadata only.
               </p>
 
               <SubHeading>Emergency stop</SubHeading>
@@ -701,15 +701,15 @@ submit_consent_decision({
               <SubHeading>What we never log</SubHeading>
               <ul className="mt-3 space-y-2 text-sm leading-relaxed text-white/60">
                 <li className="flex gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00e5b4]" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6D5BFF]" />
                   Raw card numbers, CVCs, or PIN material — anywhere, ever (stdout, stderr, Sentry, analytics).
                 </li>
                 <li className="flex gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00e5b4]" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6D5BFF]" />
                   Stripe secret keys or webhook signing secrets.
                 </li>
                 <li className="flex gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00e5b4]" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6D5BFF]" />
                   Raw wallet tokens — only their salted hash is stored.
                 </li>
               </ul>
@@ -779,12 +779,12 @@ submit_consent_decision({
 
             {/* Footer CTA */}
             <section className="mt-20">
-              <div className="relative overflow-hidden rounded-2xl border border-[#00e5b4]/15 bg-[#00e5b4]/5 px-10 py-14 text-center">
+              <div className="relative overflow-hidden rounded-2xl border border-[#6D5BFF]/15 bg-[#6D5BFF]/5 px-10 py-14 text-center">
                 <div
                   aria-hidden
                   className="pointer-events-none absolute inset-0 flex items-center justify-center"
                 >
-                  <div className="h-56 w-56 rounded-full bg-[#00e5b4]/10 blur-3xl" />
+                  <div className="h-56 w-56 rounded-full bg-[#6D5BFF]/10 blur-3xl" />
                 </div>
                 <h2 className="relative mx-auto max-w-md text-2xl font-bold text-white sm:text-3xl">
                   Ready to never stop again?
@@ -795,7 +795,7 @@ submit_consent_decision({
                 <div className="relative mt-6 flex flex-wrap justify-center gap-4">
                   <Link
                     href="/login"
-                    className="rounded-lg bg-[#00e5b4] px-6 py-3 text-sm font-semibold text-[#070d18] shadow-lg shadow-[#00e5b4]/10 transition-opacity hover:opacity-90"
+                    className="rounded-lg bg-[#6D5BFF] px-6 py-3 text-sm font-semibold text-[#0D0F14] shadow-lg shadow-[#6D5BFF]/10 transition-opacity hover:opacity-90"
                   >
                     Get your wallet →
                   </Link>

@@ -77,13 +77,13 @@ function CardForm({ onSuccess, onCancel }: { onSuccess: (pm: SavedPaymentMethod)
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
         <label className="block text-xs font-medium text-slate-500 mb-2">Card details</label>
-        <div className="border border-slate-200 rounded-lg px-4 py-3 focus-within:border-[#00e5b4] transition-colors">
+        <div className="border border-slate-200 rounded-lg px-4 py-3 focus-within:border-[#6D5BFF] transition-colors">
           <CardElement
             options={{
               style: {
                 base: {
                   fontSize: "14px",
-                  color: "#0a1220",
+                  color: "#0D0F14",
                   fontFamily: "'Inter', system-ui, sans-serif",
                   "::placeholder": { color: "#94a3b8" },
                 },
@@ -109,7 +109,7 @@ function CardForm({ onSuccess, onCancel }: { onSuccess: (pm: SavedPaymentMethod)
         <button
           type="submit"
           disabled={loading || !stripe}
-          className="flex-1 bg-[#00e5b4] hover:bg-[#00c49a] disabled:opacity-40 disabled:cursor-not-allowed text-[#070d18] font-semibold text-sm py-2.5 rounded-lg transition-colors"
+          className="flex-1 bg-[#6D5BFF] hover:bg-[#5b48ff] disabled:opacity-40 disabled:cursor-not-allowed text-[#0D0F14] font-semibold text-sm py-2.5 rounded-lg transition-colors"
         >
           {loading ? "Saving…" : "Save card"}
         </button>
@@ -148,12 +148,12 @@ function AddCardModal({
     >
       <div className="bg-white sm:rounded-2xl shadow-xl w-full sm:max-w-md flex flex-col h-full sm:h-auto sm:max-h-[90vh]">
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
-          <h2 id="add-card-title" className="text-base font-semibold text-[#0a1220]">Add credit or debit card</h2>
+          <h2 id="add-card-title" className="text-base font-semibold text-[#0D0F14]">Add credit or debit card</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close add card dialog"
-            className="text-slate-500 hover:text-slate-700 -mr-1 p-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]"
+            className="text-slate-500 hover:text-slate-700 -mr-1 p-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF]"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 20 20" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
               <path d="M6 6l8 8M14 6l-8 8" strokeLinecap="round" />
@@ -231,7 +231,7 @@ export default function PaymentsClient({ initialMethod }: { initialMethod: Saved
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
               Control
             </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0D0F14]">
               Funding
             </h1>
             <p className="mt-1 text-xs text-slate-500">
@@ -243,7 +243,7 @@ export default function PaymentsClient({ initialMethod }: { initialMethod: Saved
             type="button"
             onClick={openAddCard}
             disabled={loadingSetup}
-              className="rounded-lg bg-[#070d18] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f1c30] disabled:opacity-50"
+              className="rounded-lg bg-[#0D0F14] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1a1f2c] disabled:opacity-50"
           >
               {loadingSetup ? "Loading..." : "Add funding source"}
           </button>
@@ -264,7 +264,7 @@ export default function PaymentsClient({ initialMethod }: { initialMethod: Saved
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <CardBrandIcon brand={paymentMethod.brand} />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#0a1220] capitalize">
+                  <p className="text-sm font-medium text-[#0D0F14] capitalize">
                     {paymentMethod.brand} •••• {paymentMethod.last4}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -278,7 +278,7 @@ export default function PaymentsClient({ initialMethod }: { initialMethod: Saved
                   type="button"
                   onClick={openAddCard}
                   disabled={loadingSetup}
-                  className="text-xs text-slate-700 hover:text-[#0a1220] border border-slate-200 hover:border-slate-300 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]"
+                  className="text-xs text-slate-700 hover:text-[#0D0F14] border border-slate-200 hover:border-slate-300 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF]"
                 >
                   Replace
                 </button>
@@ -308,7 +308,7 @@ export default function PaymentsClient({ initialMethod }: { initialMethod: Saved
                 type="button"
                 onClick={openAddCard}
                 disabled={loadingSetup}
-                className="mt-5 rounded-lg bg-[#070d18] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f1c30] disabled:opacity-50"
+                className="mt-5 rounded-lg bg-[#0D0F14] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1a1f2c] disabled:opacity-50"
               >
                 {loadingSetup ? "Loading..." : "Add funding source"}
               </button>

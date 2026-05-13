@@ -149,20 +149,20 @@ export default function RevealPassword({ accountId, disabled = false }: Props) {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <code className="flex-1 min-w-0 font-mono text-xs text-[#0a1220] bg-slate-50 border border-slate-100 rounded-md px-2.5 py-2 break-all">
+          <code className="flex-1 min-w-0 font-mono text-xs text-[#0D0F14] bg-slate-50 border border-slate-100 rounded-md px-2.5 py-2 break-all">
             {password}
           </code>
           <button
             type="button"
             onClick={copy}
-            className="text-[11px] font-semibold text-slate-700 hover:text-[#0a1220] border border-slate-200 hover:border-slate-300 bg-white rounded-md px-2.5 py-2 transition-colors shrink-0"
+            className="text-[11px] font-semibold text-slate-700 hover:text-[#0D0F14] border border-slate-200 hover:border-slate-300 bg-white rounded-md px-2.5 py-2 transition-colors shrink-0"
           >
             {copied ? "Copied" : "Copy"}
           </button>
           <button
             type="button"
             onClick={hide}
-            className="text-[11px] font-semibold text-[#0a1220] bg-white border border-slate-200 hover:border-slate-300 rounded-md px-2.5 py-2 transition-colors shrink-0"
+            className="text-[11px] font-semibold text-[#0D0F14] bg-white border border-slate-200 hover:border-slate-300 rounded-md px-2.5 py-2 transition-colors shrink-0"
           >
             Hide
           </button>
@@ -182,7 +182,7 @@ export default function RevealPassword({ accountId, disabled = false }: Props) {
           setConfirmOpen(true);
         }}
         disabled={disabled}
-        className="text-xs font-semibold text-white bg-[#070d18] hover:bg-[#0f1c30] rounded-lg px-3 py-2 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4] focus-visible:ring-offset-2"
+        className="text-xs font-semibold text-white bg-[#0D0F14] hover:bg-[#1a1f2c] rounded-lg px-3 py-2 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF] focus-visible:ring-offset-2"
       >
         Reveal password
       </button>
@@ -194,7 +194,7 @@ export default function RevealPassword({ accountId, disabled = false }: Props) {
 
       {confirmOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:px-4 bg-[#070d18]/50"
+          className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:px-4 bg-[#0D0F14]/50"
           onClick={() => !loading && setConfirmOpen(false)}
         >
           <div
@@ -207,7 +207,7 @@ export default function RevealPassword({ accountId, disabled = false }: Props) {
             className="bg-white sm:rounded-2xl shadow-xl sm:border sm:border-slate-100 sm:max-w-sm w-full p-6 focus:outline-none h-full sm:h-auto overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <p id={titleId} className="text-sm font-semibold text-[#0a1220]">
+            <p id={titleId} className="text-sm font-semibold text-[#0D0F14]">
               Reveal account password?
             </p>
             <p id={descId} className="text-xs text-slate-600 mt-1.5 leading-relaxed">
@@ -224,7 +224,7 @@ export default function RevealPassword({ accountId, disabled = false }: Props) {
                 type="button"
                 onClick={() => setConfirmOpen(false)}
                 disabled={loading}
-                className="text-xs font-semibold text-[#0a1220] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4] focus-visible:ring-offset-2"
+                className="text-xs font-semibold text-[#0D0F14] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF] focus-visible:ring-offset-2"
               >
                 Cancel
               </button>
@@ -232,7 +232,7 @@ export default function RevealPassword({ accountId, disabled = false }: Props) {
                 type="button"
                 onClick={reveal}
                 disabled={loading}
-                className="text-xs font-semibold text-white bg-[#070d18] hover:bg-[#0f1c30] rounded-lg px-3 py-2 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4] focus-visible:ring-offset-2"
+                className="text-xs font-semibold text-white bg-[#0D0F14] hover:bg-[#1a1f2c] rounded-lg px-3 py-2 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF] focus-visible:ring-offset-2"
               >
                 {loading ? "Revealing…" : "Reveal"}
               </button>

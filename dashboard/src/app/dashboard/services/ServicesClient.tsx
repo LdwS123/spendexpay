@@ -75,7 +75,7 @@ export default function ServicesClient({ card: initialCard }: Props) {
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
             Control
           </p>
-          <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+          <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0D0F14]">
             Virtual card
           </h1>
           <p className="mt-1 text-xs text-slate-500">
@@ -186,21 +186,21 @@ function AgentFlowDiagram() {
           Configure budgets and allowed services on the{" "}
           <Link
             href="/dashboard/rules"
-            className="font-medium text-[#00a882] hover:text-[#00e5b4]"
+            className="font-medium text-[#3B82F6] hover:text-[#6D5BFF]"
           >
             Rules
           </Link>{" "}
           page. Watch live charges on{" "}
           <Link
             href="/dashboard/transactions"
-            className="font-medium text-[#00a882] hover:text-[#00e5b4]"
+            className="font-medium text-[#3B82F6] hover:text-[#6D5BFF]"
           >
             Transactions
           </Link>
           .
         </p>
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#00a882] bg-[#00e5b4]/15 px-2.5 py-1 rounded-full self-start sm:self-auto">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#00a882]" />
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#3B82F6] bg-[#6D5BFF]/15 px-2.5 py-1 rounded-full self-start sm:self-auto">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
           Average decision: under 2 seconds
         </span>
       </div>
@@ -216,9 +216,9 @@ function FlowStep({
   step: { title: string; detail: string };
 }) {
   return (
-    <div className="flex-1 bg-[#070d18] text-white rounded-xl p-4 min-h-[120px]">
+    <div className="flex-1 bg-[#0D0F14] text-white rounded-xl p-4 min-h-[120px]">
       <div className="flex items-center gap-2 mb-2">
-        <span className="w-5 h-5 rounded-full bg-[#00e5b4] text-[#070d18] text-[10px] font-bold flex items-center justify-center">
+        <span className="w-5 h-5 rounded-full bg-[#6D5BFF] text-[#0D0F14] text-[10px] font-bold flex items-center justify-center">
           {index}
         </span>
         <p className="text-[10px] tracking-widest uppercase text-white/55">
@@ -238,14 +238,14 @@ function FlowArrow() {
     <>
       {/* Desktop: arrow points right, sits inline between cards */}
       <div
-        className="hidden md:flex absolute top-1/2 -right-2 -translate-y-1/2 items-center justify-center text-[#00e5b4] text-lg z-10 bg-white rounded-full w-5 h-5"
+        className="hidden md:flex absolute top-1/2 -right-2 -translate-y-1/2 items-center justify-center text-[#6D5BFF] text-lg z-10 bg-white rounded-full w-5 h-5"
         aria-hidden="true"
       >
         →
       </div>
       {/* Mobile: arrow points down, between stacked cards */}
       <div
-        className="md:hidden flex items-center justify-center text-[#00e5b4] text-xl py-1"
+        className="md:hidden flex items-center justify-center text-[#6D5BFF] text-xl py-1"
         aria-hidden="true"
       >
         ↓
@@ -262,12 +262,12 @@ function IntegrationCard({ integration }: { integration: Integration }) {
       case "connected":
         return {
           label: "Connected",
-          className: "bg-[#00e5b4]/15 text-[#00a882]",
+          className: "bg-[#6D5BFF]/15 text-[#3B82F6]",
         };
       case "fallback":
         return {
           label: "Works today",
-          className: "bg-[#00e5b4]/15 text-[#00a882]",
+          className: "bg-[#6D5BFF]/15 text-[#3B82F6]",
         };
       case "coming_soon":
       default:
@@ -281,7 +281,7 @@ function IntegrationCard({ integration }: { integration: Integration }) {
   return (
     <div className="bg-white border border-slate-100 rounded-xl p-4 flex items-start justify-between gap-3 hover:border-slate-200 transition-colors">
       <div className="min-w-0">
-        <h3 className="text-sm font-semibold text-[#0a1220]">
+        <h3 className="text-sm font-semibold text-[#0D0F14]">
           {integration.name}
         </h3>
         <p className="text-xs text-slate-500 mt-1 leading-relaxed">
@@ -307,7 +307,7 @@ function CardDetailsAdvanced() {
       <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[#0a1220]">
+            <p className="text-sm font-semibold text-[#0D0F14]">
               When to use the card details directly
             </p>
             <p className="text-xs text-slate-500 mt-1.5 leading-relaxed max-w-2xl">
@@ -321,7 +321,7 @@ function CardDetailsAdvanced() {
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="text-xs font-semibold text-white bg-[#070d18] hover:bg-[#0f1c30] rounded-lg px-3 py-2 transition-colors shrink-0"
+              className="text-xs font-semibold text-white bg-[#0D0F14] hover:bg-[#1a1f2c] rounded-lg px-3 py-2 transition-colors shrink-0"
             >
               Reveal card details
             </button>
@@ -422,7 +422,7 @@ function RevealPanel({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={reveal}
-            className="text-xs font-semibold text-white bg-[#070d18] hover:bg-[#0f1c30] rounded-lg px-3 py-2 transition-colors"
+            className="text-xs font-semibold text-white bg-[#0D0F14] hover:bg-[#1a1f2c] rounded-lg px-3 py-2 transition-colors"
           >
             Try again
           </button>
@@ -432,7 +432,7 @@ function RevealPanel({ onClose }: { onClose: () => void }) {
               hide();
               onClose();
             }}
-            className="text-xs font-semibold text-[#0a1220] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors"
+            className="text-xs font-semibold text-[#0D0F14] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors"
           >
             Close
           </button>
@@ -473,7 +473,7 @@ function RevealPanel({ onClose }: { onClose: () => void }) {
             hide();
             onClose();
           }}
-          className="text-xs font-semibold text-[#0a1220] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors"
+          className="text-xs font-semibold text-[#0D0F14] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors"
         >
           Hide details
         </button>
@@ -488,7 +488,7 @@ function RevealPanel({ onClose }: { onClose: () => void }) {
 
 function DetailField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-[#070d18] text-white rounded-lg p-3">
+    <div className="bg-[#0D0F14] text-white rounded-lg p-3">
       <p className="text-[10px] tracking-widest uppercase text-white/55">
         {label}
       </p>
@@ -517,7 +517,7 @@ function CardShowcase(props: CardShowcaseProps) {
         style={{
           background: frozen
             ? "linear-gradient(135deg, #1a1f2c 0%, #232938 55%, #2c3344 100%)"
-            : "linear-gradient(135deg, #070d18 0%, #0a1220 55%, #0e1a30 100%)",
+            : "linear-gradient(135deg, #0D0F14 0%, #0D0F14 55%, #0e1a30 100%)",
           boxShadow:
             "0 20px 40px -12px rgba(7,13,24,0.45), 0 1px 0 rgba(255,255,255,0.04) inset",
           filter: frozen ? "saturate(0.5)" : undefined,
@@ -532,7 +532,7 @@ function CardShowcase(props: CardShowcaseProps) {
         <div
           aria-hidden="true"
           className="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-30 blur-3xl pointer-events-none"
-          style={{ background: "#00e5b4" }}
+          style={{ background: "#6D5BFF" }}
         />
 
         {/* Header row */}
@@ -589,20 +589,20 @@ function CardShowcase(props: CardShowcaseProps) {
         <p className="text-xs text-slate-500 leading-relaxed">
           This is your reusable Spendex card. Your AI agent reaches it through
           the{" "}
-          <code className="font-mono text-[11px] bg-slate-100 text-[#0a1220] px-1.5 py-0.5 rounded">
+          <code className="font-mono text-[11px] bg-slate-100 text-[#0D0F14] px-1.5 py-0.5 rounded">
             pay_for_service
           </code>{" "}
           MCP tool — no copy-paste required. Charges appear on your{" "}
           <Link
             href="/dashboard/transactions"
-            className="font-medium text-[#00a882] hover:text-[#00e5b4]"
+            className="font-medium text-[#3B82F6] hover:text-[#6D5BFF]"
           >
             Transactions
           </Link>{" "}
           page in real time, gated by the limits you set under{" "}
           <Link
             href="/dashboard/rules"
-            className="font-medium text-[#00a882] hover:text-[#00e5b4]"
+            className="font-medium text-[#3B82F6] hover:text-[#6D5BFF]"
           >
             Rules
           </Link>
@@ -616,8 +616,8 @@ function CardShowcase(props: CardShowcaseProps) {
               Card frozen
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#00a882] bg-[#00e5b4]/15 px-2.5 py-1 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00a882]" />
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#3B82F6] bg-[#6D5BFF]/15 px-2.5 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
               Card active
             </span>
           )}
@@ -685,7 +685,7 @@ function FreezeControl({ status, onStatusChange }: FreezeControlProps) {
         }}
         className={
           frozen
-            ? "text-xs font-semibold text-[#0a1220] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors"
+            ? "text-xs font-semibold text-[#0D0F14] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors"
             : "text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 hover:border-red-200 rounded-lg px-3 py-2 transition-colors"
         }
       >
@@ -699,7 +699,7 @@ function FreezeControl({ status, onStatusChange }: FreezeControlProps) {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
         >
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <p className="text-sm font-semibold text-[#0a1220]">
+            <p className="text-sm font-semibold text-[#0D0F14]">
               {frozen ? "Unfreeze your card?" : "Freeze your card?"}
             </p>
             <p className="text-xs text-slate-500 mt-2 leading-relaxed">
@@ -723,7 +723,7 @@ function FreezeControl({ status, onStatusChange }: FreezeControlProps) {
                 onClick={applyChange}
                 className={
                   frozen
-                    ? "text-xs font-semibold text-[#070d18] bg-[#00e5b4] hover:bg-[#00c49a] rounded-lg px-3 py-2 transition-colors disabled:opacity-50"
+                    ? "text-xs font-semibold text-[#0D0F14] bg-[#6D5BFF] hover:bg-[#5b48ff] rounded-lg px-3 py-2 transition-colors disabled:opacity-50"
                     : "text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg px-3 py-2 transition-colors disabled:opacity-50"
                 }
               >
@@ -796,7 +796,7 @@ function CopyButton({ label, value }: { label: string; value: string }) {
     <button
       type="button"
       onClick={copy}
-      className="text-xs font-medium text-slate-700 hover:text-[#0a1220] border border-slate-200 hover:border-slate-300 bg-white rounded-lg px-2.5 py-2 transition-colors"
+      className="text-xs font-medium text-slate-700 hover:text-[#0D0F14] border border-slate-200 hover:border-slate-300 bg-white rounded-lg px-2.5 py-2 transition-colors"
     >
       {copied ? "Copied" : label}
     </button>
@@ -808,20 +808,20 @@ function CopyButton({ label, value }: { label: string; value: string }) {
 function NoCardState() {
   return (
     <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-8 text-center">
-      <p className="text-sm font-medium text-[#0a1220]">
+      <p className="text-sm font-medium text-[#0D0F14]">
         No virtual card yet
       </p>
       <p className="text-xs text-slate-500 mt-1.5 max-w-md mx-auto">
         Connect a card on the{" "}
         <Link
           href="/dashboard/payments"
-          className="text-[#00a882] hover:text-[#00e5b4] font-medium"
+          className="text-[#3B82F6] hover:text-[#6D5BFF] font-medium"
         >
           Funding source
         </Link>{" "}
         page to provision your wallet. Once it&rsquo;s active, your agent can
         pay autonomously through the{" "}
-        <code className="font-mono text-[11px] bg-slate-100 text-[#0a1220] px-1.5 py-0.5 rounded">
+        <code className="font-mono text-[11px] bg-slate-100 text-[#0D0F14] px-1.5 py-0.5 rounded">
           pay_for_service
         </code>{" "}
         MCP tool.

@@ -9,11 +9,11 @@ import Footer from "./components/Footer";
 //    Spendex Pay removes that wall."
 //
 // Five sections, each with one job and one CTA. All CTAs point to /dashboard.
-// Dark navy bg (#070d18), teal accent (#00e5b4) reserved for CTAs + check icons.
+// Dark navy bg (#0D0F14), teal accent (#6D5BFF) reserved for CTAs + check icons.
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#070d18] text-white antialiased">
+    <div className="min-h-screen bg-[#0D0F14] text-white antialiased">
       <Navbar />
       <main>
         <Hero />
@@ -31,14 +31,14 @@ export default function HomePage() {
 
 function Navbar() {
   return (
-    <header className="sticky top-0 z-30 border-b border-white/5 bg-[#070d18]/80 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-white/5 bg-[#0D0F14]/80 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="text-sm font-bold tracking-tight">
-          Spendex <span className="text-[#00e5b4]">Pay</span>
+          Spendex <span className="text-[#6D5BFF]">Pay</span>
         </Link>
         <Link
           href="/dashboard"
-          className="rounded-full bg-[#00e5b4] px-4 py-2 text-xs font-semibold text-[#04221b] transition-opacity hover:opacity-90"
+          className="rounded-full bg-[#6D5BFF] px-4 py-2 text-xs font-semibold text-[#04221b] transition-opacity hover:opacity-90"
         >
           Get access
         </Link>
@@ -90,7 +90,7 @@ function Hero() {
         <div className="mt-16 flex justify-center sm:justify-start">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-full bg-[#00e5b4] px-8 py-4 text-base font-semibold text-[#04221b] transition-opacity hover:opacity-90 sm:text-lg"
+            className="inline-flex items-center gap-2 rounded-full bg-[#6D5BFF] px-8 py-4 text-base font-semibold text-[#04221b] transition-opacity hover:opacity-90 sm:text-lg"
           >
             Get early access
             <span aria-hidden>→</span>
@@ -118,13 +118,13 @@ function ChatColumn({
 }) {
   const isGood = tone === "good";
   const borderTone = isGood
-    ? "border-[#00e5b4]/30"
+    ? "border-[#6D5BFF]/30"
     : "border-rose-500/25";
   const badgeTone = isGood
-    ? "bg-[#00e5b4]/10 text-[#00e5b4]"
+    ? "bg-[#6D5BFF]/10 text-[#6D5BFF]"
     : "bg-rose-500/10 text-rose-300";
   const icon = isGood ? "✓" : "✕";
-  const iconTone = isGood ? "text-[#00e5b4]" : "text-rose-400";
+  const iconTone = isGood ? "text-[#6D5BFF]" : "text-rose-400";
 
   return (
     <div
@@ -180,7 +180,7 @@ function ChatBubble({
   }
 
   const accent =
-    tone === "good" ? "text-[#00e5b4]" : "text-rose-300/90";
+    tone === "good" ? "text-[#6D5BFF]" : "text-rose-300/90";
 
   return (
     <div className="flex flex-col gap-1">
@@ -245,7 +245,7 @@ function HowItWorks() {
               <p className="mt-3 text-sm leading-relaxed text-white/55">
                 {s.copy}
               </p>
-              <code className="mt-6 inline-block rounded-md bg-black/40 px-3 py-2 font-mono text-xs text-[#00e5b4]/90">
+              <code className="mt-6 inline-block rounded-md bg-black/40 px-3 py-2 font-mono text-xs text-[#6D5BFF]/90">
                 {s.code}
               </code>
             </li>
@@ -289,7 +289,7 @@ function ConsentWidget() {
     <div className="mx-auto max-w-md rounded-2xl border border-white/10 bg-[#0a1320] shadow-2xl shadow-black/40">
       <div className="flex items-center justify-between border-b border-white/5 px-5 py-3">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-[#00e5b4]" />
+          <span className="h-2 w-2 rounded-full bg-[#6D5BFF]" />
           <span className="text-xs font-medium text-white/70">
             Spendex · purchase approval
           </span>
@@ -316,9 +316,9 @@ function ConsentWidget() {
           </div>
         </div>
 
-        <div className="mt-5 rounded-lg border border-[#00e5b4]/20 bg-[#00e5b4]/[0.06] px-4 py-3">
+        <div className="mt-5 rounded-lg border border-[#6D5BFF]/20 bg-[#6D5BFF]/[0.06] px-4 py-3">
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-[#00e5b4]">✓</span>
+            <span className="text-[#6D5BFF]">✓</span>
             <span className="text-white/80">Within your rules</span>
           </div>
           <p className="mt-1 text-xs text-white/50">
@@ -336,7 +336,7 @@ function ConsentWidget() {
         </button>
         <button
           type="button"
-          className="rounded-lg bg-[#00e5b4] px-4 py-2.5 text-sm font-semibold text-[#04221b] transition-opacity hover:opacity-90"
+          className="rounded-lg bg-[#6D5BFF] px-4 py-2.5 text-sm font-semibold text-[#04221b] transition-opacity hover:opacity-90"
         >
           Approve
         </button>
@@ -412,7 +412,7 @@ function FinalCta() {
         </h2>
         <Link
           href="/dashboard"
-          className="mt-10 inline-flex items-center gap-2 rounded-full bg-[#00e5b4] px-8 py-4 text-base font-semibold text-[#04221b] transition-opacity hover:opacity-90 sm:text-lg"
+          className="mt-10 inline-flex items-center gap-2 rounded-full bg-[#6D5BFF] px-8 py-4 text-base font-semibold text-[#04221b] transition-opacity hover:opacity-90 sm:text-lg"
         >
           Try Spendex Pay
           <span aria-hidden>→</span>

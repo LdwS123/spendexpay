@@ -315,13 +315,13 @@ export default async function DashboardPage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
               {currentMonth}
             </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0D0F14]">
               Agent spending
             </h1>
         </div>
         <Link
           href="/dashboard/wallet"
-            className="rounded-lg bg-[#070d18] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f1c30]"
+            className="rounded-lg bg-spendex-dark px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1a1f2c]"
         >
             Manage wallet
         </Link>
@@ -387,7 +387,7 @@ export default async function DashboardPage() {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                   Setup
                 </p>
-                <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-[#0a1220]">
+                <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-[#0D0F14]">
                   Prepare this workspace for agent payments
                 </h2>
                 <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
@@ -426,12 +426,12 @@ export default async function DashboardPage() {
                   </ol>
                 </div>
 
-                <div className="border-t border-slate-100 bg-[#070d18] p-6 text-white md:border-l md:border-t-0">
+                <div className="border-t border-slate-100 bg-spendex-dark p-6 text-white md:border-l md:border-t-0">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
                     Install
                   </p>
                   <pre className="mt-4 whitespace-pre-wrap break-all font-mono text-[12px] leading-6 text-white/78">
-                    <span className="text-[#00e5b4]">$</span> npx @spendexai/mcp
+                    <span className="text-spendex-purple">$</span> npx @spendexai/mcp
                   </pre>
                   <div className="mt-5 space-y-2 border-t border-white/8 pt-5 text-xs text-white/45">
                     <p>Auth: MCP token</p>
@@ -445,7 +445,7 @@ export default async function DashboardPage() {
             {onboarding.hasVirtualCard && (
               <section className="mt-7">
                 <div className="mb-3">
-                  <h2 className="text-sm font-semibold text-[#0a1220]">
+                  <h2 className="text-sm font-semibold text-[#0D0F14]">
                     Recent activity
                   </h2>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -477,12 +477,12 @@ export default async function DashboardPage() {
             <section>
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h2 className="text-sm font-semibold text-[#0a1220]">Recent transactions</h2>
+                  <h2 className="text-sm font-semibold text-[#0D0F14]">Recent transactions</h2>
                   <p className="text-xs text-slate-400 mt-0.5">Last 5 charge attempts.</p>
                 </div>
                 <Link
                   href="/dashboard/activity"
-                  className="text-xs text-[#00e5b4] hover:text-[#00c49a] font-medium transition-colors"
+                  className="text-xs text-spendex-purple hover:text-spendex-blue font-medium transition-colors"
                 >
                   View all →
                 </Link>
@@ -502,11 +502,11 @@ export default async function DashboardPage() {
                         key={tx.id}
                         href={`/dashboard/transactions/${tx.id}`}
                         aria-label={`Transaction ${serviceName(tx.service)} ${tx.amount_usd !== null ? formatEur(tx.amount_usd) : ""} on ${formatDate(tx.created_at)}, status ${tx.status}`}
-                        className="relative flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4] focus-visible:ring-inset"
+                        className="relative flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-spendex-purple focus-visible:ring-inset"
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-[#0a1220]">
+                            <span className="text-sm font-medium text-[#0D0F14]">
                               {serviceName(tx.service)}
                             </span>
                             <span className="text-[11px] text-slate-400 hidden md:inline">
@@ -520,7 +520,7 @@ export default async function DashboardPage() {
                           )}
                         </div>
                         <div className="shrink-0 text-right">
-                          <div className="text-sm font-semibold text-[#0a1220] tabular-nums">
+                          <div className="text-sm font-semibold text-[#0D0F14] tabular-nums">
                             {tx.amount_usd !== null ? formatEur(tx.amount_usd) : "—"}
                           </div>
                           <div className="mt-1">{statusBadge(tx.status)}</div>
@@ -573,7 +573,7 @@ function StatCard({
       <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-3">
         {label}
       </p>
-      <p className="text-xl sm:text-2xl font-bold text-[#0a1220] tracking-tight">{value}</p>
+      <p className="text-xl sm:text-2xl font-bold text-[#0D0F14] tracking-tight">{value}</p>
       <p className="text-[11px] text-slate-400 mt-1">{sub}</p>
     </div>
   );
@@ -592,16 +592,16 @@ function OnboardingStep({
 }) {
   return (
     <li className="flex gap-4">
-      <div className="shrink-0 w-6 h-6 rounded-full bg-[#070d18] text-[#00e5b4] text-[11px] font-bold flex items-center justify-center mt-0.5">
+      <div className="shrink-0 w-6 h-6 rounded-full bg-spendex-dark text-spendex-purple text-[11px] font-bold flex items-center justify-center mt-0.5">
         {number}
       </div>
       <div className="flex-1">
-        <p className="text-sm font-semibold text-[#0a1220]">{title}</p>
+        <p className="text-sm font-semibold text-[#0D0F14]">{title}</p>
         <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{description}</p>
         {action && (
           <Link
             href={action.href}
-            className="inline-block mt-2 text-xs font-semibold text-[#00c49a] hover:text-[#00a882] transition-colors"
+            className="inline-block mt-2 text-xs font-semibold text-spendex-blue hover:text-spendex-purple transition-colors"
           >
             {action.label} →
           </Link>
@@ -625,12 +625,12 @@ function QuickAction({
   return (
     <div className="bg-white rounded-xl border border-slate-100 p-5 flex flex-col gap-3">
       <div>
-        <p className="text-sm font-semibold text-[#0a1220]">{title}</p>
+        <p className="text-sm font-semibold text-[#0D0F14]">{title}</p>
         <p className="text-xs text-slate-400 mt-0.5">{description}</p>
       </div>
       <Link
         href={href}
-        className="self-start bg-[#070d18] hover:bg-[#0f1c30] text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+        className="self-start bg-spendex-dark hover:bg-[#1a1f2c] text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
       >
         {cta}
       </Link>

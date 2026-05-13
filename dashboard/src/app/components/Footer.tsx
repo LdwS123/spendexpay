@@ -8,11 +8,11 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-white/5 bg-[#070d18]">
+    <footer className="border-t border-white/5 bg-[#0D0F14]">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
           <span className="text-sm font-bold text-white/40">
-            Spendex <span className="text-[#00e5b4]/70">Pay</span>
+            Spendex <span className="text-[#6D5BFF]/70">Pay</span>
           </span>
           <span className="text-xs text-white/25">
             © 2026 Spendex AI. All rights reserved.

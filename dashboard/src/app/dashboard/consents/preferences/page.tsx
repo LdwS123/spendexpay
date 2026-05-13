@@ -266,7 +266,7 @@ export default function ConsentPreferencesPage() {
           >
             ← All consents
           </Link>
-          <h1 className="text-lg font-semibold text-[#0a1220] mt-1">
+          <h1 className="text-lg font-semibold text-[#0D0F14] mt-1">
             Consent preferences
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -290,17 +290,17 @@ export default function ConsentPreferencesPage() {
         )}
 
         {/* ── Summary recap ── */}
-        <div className="rounded-xl border border-[#00e5b4]/30 bg-gradient-to-br from-[#00e5b4]/10 to-white p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#00876a] mb-2">
+        <div className="rounded-xl border border-[#6D5BFF]/30 bg-gradient-to-br from-[#6D5BFF]/10 to-white p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6D5BFF] mb-2">
             Current policy
           </p>
-          <p className="text-sm leading-relaxed text-[#070d18]">{summary}</p>
+          <p className="text-sm leading-relaxed text-[#0D0F14]">{summary}</p>
         </div>
 
         {/* ── Default mode ── */}
         <div className="bg-white rounded-xl border border-slate-100 p-6 space-y-4">
           <div>
-            <h2 className="text-sm font-semibold text-[#0a1220]">Default mode</h2>
+            <h2 className="text-sm font-semibold text-[#0D0F14]">Default mode</h2>
             <p className="text-xs text-slate-400 mt-0.5">
               Choose how your agent should handle new requests.
             </p>
@@ -342,7 +342,7 @@ export default function ConsentPreferencesPage() {
                     disabled={loading}
                     value={threshold}
                     onChange={(e) => setThreshold(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6D5BFF] focus:border-[#6D5BFF] disabled:bg-slate-50"
                   />
                 </div>
               </div>
@@ -373,7 +373,7 @@ export default function ConsentPreferencesPage() {
                         onClick={() => toggleTrusted(s.id)}
                         className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                           active
-                            ? "bg-[#00e5b4] border-[#00e5b4] text-[#070d18]"
+                            ? "bg-[#6D5BFF] border-[#6D5BFF] text-[#0D0F14]"
                             : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                         }`}
                       >
@@ -399,7 +399,7 @@ export default function ConsentPreferencesPage() {
         {/* ── Auto-signup whitelist ── */}
         <div className="bg-white rounded-xl border border-slate-100 p-6 space-y-4">
           <div>
-            <h2 className="text-sm font-semibold text-[#0a1220]">
+            <h2 className="text-sm font-semibold text-[#0D0F14]">
               Auto-signup whitelist
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -421,7 +421,7 @@ export default function ConsentPreferencesPage() {
                   aria-pressed={active}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                     active
-                      ? "bg-[#00e5b4] border-[#00e5b4] text-[#070d18]"
+                      ? "bg-[#6D5BFF] border-[#6D5BFF] text-[#0D0F14]"
                       : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                   }`}
                 >
@@ -442,7 +442,7 @@ export default function ConsentPreferencesPage() {
         {/* ── Notifications ── */}
         <div className="bg-white rounded-xl border border-slate-100 p-6 space-y-4">
           <div>
-            <h2 className="text-sm font-semibold text-[#0a1220]">
+            <h2 className="text-sm font-semibold text-[#0D0F14]">
               Notification channels
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -457,10 +457,10 @@ export default function ConsentPreferencesPage() {
               checked
               disabled
               readOnly
-              className="mt-0.5 h-4 w-4 accent-[#00e5b4]"
+              className="mt-0.5 h-4 w-4 accent-[#6D5BFF]"
             />
             <div className="min-w-0">
-              <p className="text-sm font-medium text-[#0a1220]">Email</p>
+              <p className="text-sm font-medium text-[#0D0F14]">Email</p>
               <p className="text-xs text-slate-400 mt-0.5">
                 Always on. We email the account address on every consent
                 request.
@@ -477,12 +477,12 @@ export default function ConsentPreferencesPage() {
                 checked={pushSubscribedHere && pushEnabled}
                 disabled={loading || pushBusy || !pushSupported}
                 onChange={(e) => togglePush(e.target.checked)}
-                className="mt-0.5 h-4 w-4 accent-[#00e5b4]"
+                className="mt-0.5 h-4 w-4 accent-[#6D5BFF]"
               />
               <div className="min-w-0 flex-1">
                 <label
                   htmlFor="push_enabled"
-                  className="text-sm font-medium text-[#0a1220] cursor-pointer"
+                  className="text-sm font-medium text-[#0D0F14] cursor-pointer"
                 >
                   Browser push notifications
                 </label>
@@ -500,7 +500,7 @@ export default function ConsentPreferencesPage() {
                 )}
 
                 {pushSupported && pushSubscribedHere && pushEnabled && (
-                  <p className="mt-2 text-[11px] font-medium text-[#00876a]">
+                  <p className="mt-2 text-[11px] font-medium text-[#6D5BFF]">
                     Push notifications enabled on this browser.
                   </p>
                 )}
@@ -527,12 +527,12 @@ export default function ConsentPreferencesPage() {
                 checked={telegramEnabled}
                 disabled={loading}
                 onChange={(e) => setTelegramEnabled(e.target.checked)}
-                className="mt-0.5 h-4 w-4 accent-[#00e5b4]"
+                className="mt-0.5 h-4 w-4 accent-[#6D5BFF]"
               />
               <div className="min-w-0 flex-1">
                 <label
                   htmlFor="telegram_enabled"
-                  className="text-sm font-medium text-[#0a1220] cursor-pointer"
+                  className="text-sm font-medium text-[#0D0F14] cursor-pointer"
                 >
                   Telegram
                 </label>
@@ -545,7 +545,7 @@ export default function ConsentPreferencesPage() {
                     <button
                       type="button"
                       onClick={() => setShowTelegramModal(true)}
-                      className="text-xs font-semibold text-[#00a882] hover:text-[#00e5b4] transition-colors"
+                      className="text-xs font-semibold text-[#3B82F6] hover:text-[#6D5BFF] transition-colors"
                     >
                       Connect Telegram →
                     </button>
@@ -560,13 +560,13 @@ export default function ConsentPreferencesPage() {
                           value={telegramChatId}
                           onChange={(e) => setTelegramChatId(e.target.value)}
                           placeholder="e.g. 1234567890"
-                          className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50"
+                          className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#6D5BFF] focus:border-[#6D5BFF] disabled:bg-slate-50"
                         />
                         <button
                           type="button"
                           disabled={loading || !telegramChatId.trim()}
                           onClick={testTelegram}
-                          className="px-3 py-2 rounded-lg text-xs font-medium border border-slate-200 text-[#070d18] hover:border-[#00e5b4] hover:text-[#00876a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-3 py-2 rounded-lg text-xs font-medium border border-slate-200 text-[#0D0F14] hover:border-[#6D5BFF] hover:text-[#6D5BFF] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Test notification
                         </button>
@@ -587,10 +587,10 @@ export default function ConsentPreferencesPage() {
             disabled={loading || saveState === "saving"}
             className={`font-semibold text-sm px-5 py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               saveState === "saved"
-                ? "bg-[#00e5b4]/15 text-[#00a882]"
+                ? "bg-[#6D5BFF]/15 text-[#3B82F6]"
                 : saveState === "error"
                 ? "bg-red-50 text-red-600 border border-red-200"
-                : "bg-[#00e5b4] hover:bg-[#00c49a] text-[#070d18]"
+                : "bg-[#6D5BFF] hover:bg-[#5b48ff] text-[#0D0F14]"
             }`}
           >
             {saveState === "saving"
@@ -644,7 +644,7 @@ function ModeRadio({
     <label
       className={`block rounded-lg border px-4 py-3 cursor-pointer transition-colors ${
         active
-          ? "border-[#00e5b4] bg-[#00e5b4]/5"
+          ? "border-[#6D5BFF] bg-[#6D5BFF]/5"
           : "border-slate-100 hover:border-slate-200"
       } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
     >
@@ -656,10 +656,10 @@ function ModeRadio({
           checked={active}
           disabled={disabled}
           onChange={() => onChange(value)}
-          className="mt-1 h-4 w-4 accent-[#00e5b4]"
+          className="mt-1 h-4 w-4 accent-[#6D5BFF]"
         />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-[#0a1220]">{title}</p>
+          <p className="text-sm font-medium text-[#0D0F14]">{title}</p>
           <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>
           {children}
         </div>
@@ -683,7 +683,7 @@ function TelegramModal({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
-            <h3 id="telegram-modal-title" className="text-sm font-semibold text-[#0a1220]">
+            <h3 id="telegram-modal-title" className="text-sm font-semibold text-[#0D0F14]">
               Connect Telegram
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -694,7 +694,7 @@ function TelegramModal({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={onClose}
             aria-label="Close Telegram connect dialog"
-            className="text-slate-500 hover:text-slate-700 transition-colors -mr-1 p-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]"
+            className="text-slate-500 hover:text-slate-700 transition-colors -mr-1 p-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF]"
           >
             <svg
               className="h-4 w-4"
@@ -709,14 +709,14 @@ function TelegramModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <ol className="space-y-3 text-sm text-[#0a1220] list-decimal list-inside">
+        <ol className="space-y-3 text-sm text-[#0D0F14] list-decimal list-inside">
           <li>
             Open Telegram and start a chat with{" "}
             <a
               href="https://t.me/SpendexPayBot"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-[#00876a] underline underline-offset-2"
+              className="font-mono text-[#6D5BFF] underline underline-offset-2"
             >
               @SpendexPayBot
             </a>
@@ -734,7 +734,7 @@ function TelegramModal({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={onClose}
-          className="mt-5 w-full bg-[#00e5b4] hover:bg-[#00c49a] text-[#070d18] font-semibold text-sm py-2.5 rounded-lg transition-colors"
+          className="mt-5 w-full bg-[#6D5BFF] hover:bg-[#5b48ff] text-[#0D0F14] font-semibold text-sm py-2.5 rounded-lg transition-colors"
         >
           Done
         </button>

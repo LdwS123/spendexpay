@@ -151,7 +151,7 @@ export default function TwoFactorSection() {
   // ─── rendering ─────────────────────────────────────────────────────────────
   return (
     <div className="bg-white rounded-xl border border-slate-100 p-6">
-      <h2 className="text-sm font-semibold text-[#0a1220] mb-1">
+      <h2 className="text-sm font-semibold text-[#0D0F14] mb-1">
         Two-factor authentication
       </h2>
       <p className="text-xs text-slate-400 mb-4">
@@ -169,7 +169,7 @@ export default function TwoFactorSection() {
             type="button"
             disabled={busy}
             onClick={startEnrolment}
-            className="text-sm font-semibold text-[#070d18] bg-[#00e5b4] hover:bg-[#00c49a] disabled:opacity-50 px-4 py-2 rounded-lg transition-colors"
+            className="text-sm font-semibold text-[#0D0F14] bg-[#6D5BFF] hover:bg-[#5b48ff] disabled:opacity-50 px-4 py-2 rounded-lg transition-colors"
           >
             {busy ? "Starting…" : "Enable 2FA"}
           </button>
@@ -214,7 +214,7 @@ export default function TwoFactorSection() {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D+/g, ""))}
               placeholder="123 456"
-              className="w-40 border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-[#00e5b4] focus:border-[#00e5b4]"
+              className="w-40 border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-[#6D5BFF] focus:border-[#6D5BFF]"
             />
           </div>
 
@@ -225,7 +225,7 @@ export default function TwoFactorSection() {
               type="button"
               disabled={busy || code.length !== 6}
               onClick={submitVerify}
-              className="text-sm font-semibold text-[#070d18] bg-[#00e5b4] hover:bg-[#00c49a] disabled:opacity-50 px-4 py-2 rounded-lg transition-colors"
+              className="text-sm font-semibold text-[#0D0F14] bg-[#6D5BFF] hover:bg-[#5b48ff] disabled:opacity-50 px-4 py-2 rounded-lg transition-colors"
             >
               {busy ? "Verifying…" : "Verify and enable"}
             </button>
@@ -276,7 +276,7 @@ export default function TwoFactorSection() {
                   // browser may block; user can still select manually
                 }
               }}
-              className="text-xs font-medium text-slate-700 hover:text-[#0a1220] border border-slate-200 hover:border-slate-300 bg-white rounded-lg px-3 py-2 transition-colors"
+              className="text-xs font-medium text-slate-700 hover:text-[#0D0F14] border border-slate-200 hover:border-slate-300 bg-white rounded-lg px-3 py-2 transition-colors"
             >
               Copy all codes
             </button>
@@ -286,7 +286,7 @@ export default function TwoFactorSection() {
                 setRecoveryCodes([]);
                 setStep("on");
               }}
-              className="text-xs font-semibold text-[#070d18] bg-[#00e5b4] hover:bg-[#00c49a] px-3 py-2 rounded-lg transition-colors"
+              className="text-xs font-semibold text-[#0D0F14] bg-[#6D5BFF] hover:bg-[#5b48ff] px-3 py-2 rounded-lg transition-colors"
             >
               I&rsquo;ve saved them
             </button>
@@ -296,8 +296,8 @@ export default function TwoFactorSection() {
 
       {step === "on" && (
         <div className="space-y-3">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#00a882] bg-[#00e5b4]/15 px-2.5 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#00a882]" />
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#3B82F6] bg-[#6D5BFF]/15 px-2.5 py-1 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
             2FA enabled
           </span>
           <div>

@@ -81,11 +81,11 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="lg:flex min-h-screen bg-[#f6f7f9] text-[#0a1220]">
+    <div className="lg:flex min-h-screen bg-[#f6f7f9] text-[#0D0F14]">
       {/* Skip-to-content — visible only when focused via keyboard. */}
       <a
         href="#dashboard-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-lg focus:bg-[#070d18] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-[#00e5b4] focus:ring-2 focus:ring-[#00e5b4]"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-lg focus:bg-[#0D0F14] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-[#6D5BFF] focus:ring-2 focus:ring-[#6D5BFF]"
       >
         Skip to content
       </a>

@@ -13,10 +13,10 @@ export const metadata: Metadata = {
 
 function Navbar() {
   return (
-    <header className="fixed top-0 inset-x-0 z-40 border-b border-white/5 bg-[#070d18]/80 backdrop-blur-md">
+    <header className="fixed top-0 inset-x-0 z-40 border-b border-white/5 bg-[#0D0F14]/80 backdrop-blur-md">
       <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="text-lg font-bold tracking-tight text-white">
-          Spendex <span className="text-[#00e5b4]">Pay</span>
+          Spendex <span className="text-[#6D5BFF]">Pay</span>
         </Link>
         <div className="flex items-center gap-6">
           <Link
@@ -27,7 +27,7 @@ function Navbar() {
           </Link>
           <Link
             href="/login"
-            className="rounded-lg bg-[#00e5b4] px-4 py-1.5 text-sm font-semibold text-[#070d18] transition-opacity hover:opacity-90"
+            className="rounded-lg bg-[#6D5BFF] px-4 py-1.5 text-sm font-semibold text-[#0D0F14] transition-opacity hover:opacity-90"
           >
             Get started →
           </Link>
@@ -39,11 +39,11 @@ function Navbar() {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-[#070d18] text-white antialiased">
+    <div className="min-h-screen bg-[#0D0F14] text-white antialiased">
       <Navbar />
 
       <main className="mx-auto max-w-[700px] px-6 pt-32 pb-20">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#00e5b4]">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#6D5BFF]">
           Legal
         </p>
         <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
@@ -259,7 +259,7 @@ export default function PrivacyPolicyPage() {
               To exercise any of these rights, email{" "}
               <a
                 href="mailto:privacy@spendexai.com"
-                className="text-[#00e5b4] underline decoration-[#00e5b4]/40 underline-offset-4 hover:decoration-[#00e5b4]"
+                className="text-[#6D5BFF] underline decoration-[#6D5BFF]/40 underline-offset-4 hover:decoration-[#6D5BFF]"
               >
                 privacy@spendexai.com
               </a>
@@ -312,7 +312,7 @@ export default function PrivacyPolicyPage() {
               Spendex AI ·{" "}
               <a
                 href="mailto:privacy@spendexai.com"
-                className="text-[#00e5b4] underline decoration-[#00e5b4]/40 underline-offset-4 hover:decoration-[#00e5b4]"
+                className="text-[#6D5BFF] underline decoration-[#6D5BFF]/40 underline-offset-4 hover:decoration-[#6D5BFF]"
               >
                 privacy@spendexai.com
               </a>

@@ -111,8 +111,8 @@ function StatusBadge({ status }: { status: SubscriptionStatus }) {
   > = {
     active: {
       label: "Active",
-      cls: "bg-[#00e5b4]/15 text-[#00a882]",
-      dot: "bg-[#00a882]",
+      cls: "bg-[#6D5BFF]/15 text-[#3B82F6]",
+      dot: "bg-[#3B82F6]",
     },
     paused: {
       label: "Paused",
@@ -247,7 +247,7 @@ export default function SubscriptionsClient({
           {/* Headline */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm font-semibold text-[#0a1220] truncate">
+              <h3 className="text-sm font-semibold text-[#0D0F14] truncate">
                 {serviceLabel(sub.service)}
               </h3>
               <StatusBadge status={sub.status} />
@@ -261,7 +261,7 @@ export default function SubscriptionsClient({
 
           {/* Amount */}
           <div className="text-right shrink-0">
-            <p className="text-base font-semibold text-[#0a1220] tabular-nums">
+            <p className="text-base font-semibold text-[#0D0F14] tabular-nums">
               ${amount.toFixed(2)}
             </p>
             <p className="text-[11px] text-slate-400">per {interval}</p>
@@ -275,7 +275,7 @@ export default function SubscriptionsClient({
               <>Cancelled · {formatDateTime(sub.cancelled_at ?? sub.updated_at)}</>
             ) : (
               <>
-                Next charge in <span className="font-medium text-[#0a1220]">{daysUntil(sub.next_charge_at)}</span>
+                Next charge in <span className="font-medium text-[#0D0F14]">{daysUntil(sub.next_charge_at)}</span>
                 {" "}· {formatDateTime(sub.next_charge_at)}
               </>
             )}
@@ -306,7 +306,7 @@ export default function SubscriptionsClient({
                 type="button"
                 onClick={() => handleCancel(sub.id)}
                 disabled={isPending}
-                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-[#0a1220] text-white hover:bg-[#0a1220]/90 transition-colors disabled:opacity-50"
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-[#0D0F14] text-white hover:bg-[#0D0F14]/90 transition-colors disabled:opacity-50"
               >
                 {pending[sub.id] === "cancel" ? "Cancelling…" : "Cancel"}
               </button>

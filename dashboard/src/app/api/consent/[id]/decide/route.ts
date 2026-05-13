@@ -64,8 +64,8 @@ interface ConsentRequestRow {
 // HTML rendering helpers — kept inline so we don't pull in React server runtime
 // ---------------------------------------------------------------------------
 
-const BG_NAVY = "#070d18";
-const ACCENT_TEAL = "#00e5b4";
+const BG_NAVY = "#0D0F14";
+const ACCENT_TEAL = "#6D5BFF";
 const FONT_STACK =
   "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 

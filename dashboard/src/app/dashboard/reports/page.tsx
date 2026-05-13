@@ -143,7 +143,7 @@ export default function ReportsPage() {
   return (
     <main>
       <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4">
-        <h1 className="text-lg font-semibold text-[#0a1220]">Reports</h1>
+        <h1 className="text-lg font-semibold text-[#0D0F14]">Reports</h1>
         <p className="text-xs text-slate-400 mt-0.5">
           Monthly reconciliation and digests.
         </p>
@@ -154,7 +154,7 @@ export default function ReportsPage() {
         <section className="bg-white rounded-xl border border-slate-100 p-6">
           <div className="flex items-start justify-between flex-wrap gap-4 mb-5">
             <div>
-              <h2 className="text-sm font-semibold text-[#0a1220]">
+              <h2 className="text-sm font-semibold text-[#0D0F14]">
                 Funding-card reconciliation
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -164,7 +164,7 @@ export default function ReportsPage() {
             <select
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#00e5b4] focus:border-[#00e5b4]"
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#6D5BFF] focus:border-[#6D5BFF]"
             >
               {months.map((m) => (
                 <option key={m} value={m}>
@@ -255,7 +255,7 @@ export default function ReportsPage() {
                               <span
                                 className={
                                   t.source === "spendex"
-                                    ? "inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#00e5b4]/15 text-[#00a882]"
+                                    ? "inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#6D5BFF]/15 text-[#3B82F6]"
                                     : "inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-700"
                                 }
                               >
@@ -287,7 +287,7 @@ export default function ReportsPage() {
 
         {/* ── Weekly digest preview ──────────────────────────────────────── */}
         <section className="bg-white rounded-xl border border-slate-100 p-6">
-          <h2 className="text-sm font-semibold text-[#0a1220] mb-1">
+          <h2 className="text-sm font-semibold text-[#0D0F14] mb-1">
             Weekly digest
           </h2>
           <p className="text-xs text-slate-400 mb-4">
@@ -299,10 +299,10 @@ export default function ReportsPage() {
             disabled={digestState === "sending"}
             className={`text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
               digestState === "sent"
-                ? "bg-[#00e5b4]/15 text-[#00a882] cursor-default"
+                ? "bg-[#6D5BFF]/15 text-[#3B82F6] cursor-default"
                 : digestState === "sending"
-                  ? "bg-[#00e5b4]/60 text-[#070d18] cursor-not-allowed"
-                  : "bg-[#00e5b4] hover:bg-[#00c49a] text-[#070d18]"
+                  ? "bg-[#6D5BFF]/60 text-[#0D0F14] cursor-not-allowed"
+                  : "bg-[#6D5BFF] hover:bg-[#5b48ff] text-[#0D0F14]"
             }`}
           >
             {digestState === "sending"
@@ -339,14 +339,14 @@ function Card({
     tone === "danger"
       ? "border-red-200 bg-red-50/40"
       : tone === "ok"
-        ? "border-[#00e5b4]/40 bg-[#00e5b4]/10"
+        ? "border-[#6D5BFF]/40 bg-[#6D5BFF]/10"
         : "border-slate-100 bg-slate-50";
   const valueColor =
     tone === "danger"
       ? "text-red-700"
       : tone === "ok"
-        ? "text-[#00a882]"
-        : "text-[#0a1220]";
+        ? "text-[#3B82F6]"
+        : "text-[#0D0F14]";
   return (
     <div className={`rounded-lg border ${border} p-4`}>
       <div className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">

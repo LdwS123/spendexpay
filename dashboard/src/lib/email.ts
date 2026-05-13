@@ -15,8 +15,8 @@ import { Resend } from "resend";
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://spendexai.com";
 const DASHBOARD_URL = `${APP_URL}/dashboard`;
-const BG_NAVY = "#070d18";
-const ACCENT_TEAL = "#00e5b4";
+const BG_NAVY = "#0D0F14";
+const ACCENT_TEAL = "#6D5BFF";
 const FONT_STACK =
   "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 

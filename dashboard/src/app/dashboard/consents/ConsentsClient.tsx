@@ -98,8 +98,8 @@ function StatusBadge({ status }: { status: ConsentStatus }) {
   }
   if (status === "approved") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#00e5b4]/15 text-[#00a882]">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#00a882]" />
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#6D5BFF]/15 text-[#3B82F6]">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
         Approved
       </span>
     );
@@ -151,7 +151,7 @@ function PendingCard({ row, isNew }: { row: ConsentRequestRow; isNew: boolean })
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <StatusBadge status="pending" />
-          <p className="text-sm font-semibold text-[#0a1220] mt-2.5 leading-snug">
+          <p className="text-sm font-semibold text-[#0D0F14] mt-2.5 leading-snug">
             {actionPhrase(row)}
           </p>
           <p className="text-[11px] text-slate-400 mt-1">
@@ -181,7 +181,7 @@ function PendingCard({ row, isNew }: { row: ConsentRequestRow; isNew: boolean })
         </p>
         <Link
           href={`/dashboard/consents/${row.id}`}
-          className="inline-flex items-center gap-1 text-xs font-semibold bg-[#00e5b4] hover:bg-[#00c49a] text-[#070d18] px-3 py-1.5 rounded-lg transition-colors"
+          className="inline-flex items-center gap-1 text-xs font-semibold bg-[#6D5BFF] hover:bg-[#5b48ff] text-[#0D0F14] px-3 py-1.5 rounded-lg transition-colors"
         >
           Decide →
         </Link>
@@ -337,7 +337,7 @@ export default function ConsentsClient({
       {pending.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-[#0a1220]">Pending</h2>
+            <h2 className="text-sm font-semibold text-[#0D0F14]">Pending</h2>
             <span className="text-[11px] text-slate-400 tabular-nums">
               {pending.length} awaiting decision
             </span>
@@ -352,7 +352,7 @@ export default function ConsentsClient({
 
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-[#0a1220]">Recent</h2>
+          <h2 className="text-sm font-semibold text-[#0D0F14]">Recent</h2>
           <span className="text-[11px] text-slate-400 tabular-nums">
             Last {history.length}
           </span>
@@ -371,13 +371,13 @@ export default function ConsentsClient({
                   key={row.id}
                   href={`/dashboard/consents/${row.id}`}
                   aria-label={`Consent for ${serviceLabel(row.service)}, status ${row.status}, ${formatDateTime(row.created_at)}`}
-                  className={`block bg-white border border-slate-100 rounded-xl px-4 py-3 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4] ${
+                  className={`block bg-white border border-slate-100 rounded-xl px-4 py-3 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF] ${
                     newIds.has(row.id) ? "realtime-flash" : ""
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-[#0a1220] truncate">
+                      <p className="text-sm font-medium text-[#0D0F14] truncate">
                         {serviceLabel(row.service)}
                       </p>
                       <p className="text-xs text-slate-500 mt-0.5 truncate">
@@ -395,7 +395,7 @@ export default function ConsentsClient({
                     <span className="text-[11px] text-slate-500">
                       {formatDateTime(row.created_at)}
                     </span>
-                    <span className="text-xs font-semibold text-[#00a882]">
+                    <span className="text-xs font-semibold text-[#3B82F6]">
                       View →
                     </span>
                   </div>
@@ -440,7 +440,7 @@ export default function ConsentsClient({
                         <td className="px-5 py-3 text-xs text-slate-500 whitespace-nowrap">
                           {formatDateTime(row.created_at)}
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#0a1220] font-medium">
+                        <td className="px-4 py-3 text-sm text-[#0D0F14] font-medium">
                           {serviceLabel(row.service)}
                         </td>
                         <td className="px-4 py-3 text-xs text-slate-500 hidden md:table-cell">
@@ -458,7 +458,7 @@ export default function ConsentsClient({
                         <td className="px-5 py-3 text-right">
                           <Link
                             href={`/dashboard/consents/${row.id}`}
-                            className="text-xs font-semibold text-[#00a882] hover:text-[#00e5b4] transition-colors"
+                            className="text-xs font-semibold text-[#3B82F6] hover:text-[#6D5BFF] transition-colors"
                           >
                             View →
                           </Link>

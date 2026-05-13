@@ -73,7 +73,7 @@ export default async function PayPage({ params }: PageProps) {
   return (
     <Shell>
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="bg-[#070d18] text-white px-8 py-8 text-center">
+        <div className="bg-[#0D0F14] text-white px-8 py-8 text-center">
           <p className="text-xs font-medium text-white/40 uppercase tracking-widest mb-2">Amount due</p>
           <p className="text-4xl font-bold tracking-tight">${amountUsd.toFixed(2)}</p>
           <p className="text-sm text-white/50 mt-2">{description}</p>
@@ -130,8 +130,8 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center px-4 py-16">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <span className="font-bold text-[#0a1220] text-lg tracking-tight">
-            Spendex <span className="text-[#00e5b4]">Pay</span>
+          <span className="font-bold text-[#0D0F14] text-lg tracking-tight">
+            Spendex <span className="text-[#6D5BFF]">Pay</span>
           </span>
         </div>
         {children}
@@ -147,15 +147,15 @@ function StatusPage({ variant, heading, body }: { variant: Variant; heading: str
     <Shell>
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-10 flex flex-col items-center text-center">
         <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-5 ${
-          variant === "success" ? "bg-[#00e5b4]/15" :
+          variant === "success" ? "bg-[#6D5BFF]/15" :
           variant === "pending" ? "bg-amber-50" :
           "bg-red-50"
         }`}>
-          {variant === "success" && <CheckIcon className="w-6 h-6 text-[#00a882]" />}
+          {variant === "success" && <CheckIcon className="w-6 h-6 text-[#3B82F6]" />}
           {variant === "pending" && <ClockIcon className="w-6 h-6 text-amber-500 animate-spin" />}
           {variant === "error"   && <XIcon className="w-6 h-6 text-red-500" />}
         </div>
-        <h1 className="text-xl font-semibold text-[#0a1220] mb-2">{heading}</h1>
+        <h1 className="text-xl font-semibold text-[#0D0F14] mb-2">{heading}</h1>
         <p className="text-sm text-slate-500 leading-relaxed max-w-xs">{body}</p>
       </div>
     </Shell>

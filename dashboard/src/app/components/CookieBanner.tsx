@@ -44,7 +44,7 @@ export default function CookieBanner() {
     <div
       role="region"
       aria-label="Cookie notice"
-      className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-2xl rounded-xl border border-white/10 bg-[#070d18]/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md sm:inset-x-auto sm:right-4 sm:left-auto"
+      className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-2xl rounded-xl border border-white/10 bg-[#0D0F14]/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md sm:inset-x-auto sm:right-4 sm:left-auto"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs leading-relaxed text-white/70">
@@ -53,7 +53,7 @@ export default function CookieBanner() {
         <button
           type="button"
           onClick={accept}
-          className="self-start rounded-md bg-[#00e5b4] px-4 py-1.5 text-xs font-semibold text-[#070d18] transition-opacity hover:opacity-90 sm:self-auto"
+          className="self-start rounded-md bg-[#6D5BFF] px-4 py-1.5 text-xs font-semibold text-[#0D0F14] transition-opacity hover:opacity-90 sm:self-auto"
         >
           OK
         </button>

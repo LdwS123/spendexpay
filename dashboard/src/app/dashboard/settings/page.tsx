@@ -58,7 +58,7 @@ export default async function SettingsPage({ searchParams }: PageProps) {
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
           Account
         </p>
-        <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+        <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0D0F14]">
           Settings
         </h1>
         <p className="mt-1 text-xs text-slate-500">
@@ -160,8 +160,8 @@ function SettingsTabLink({
       aria-selected={active}
       className={`-mb-px px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
         active
-          ? "border-[#00e5b4] text-[#0a1220]"
-          : "border-transparent text-slate-500 hover:text-[#0a1220]"
+          ? "border-[#6D5BFF] text-[#0D0F14]"
+          : "border-transparent text-slate-500 hover:text-[#0D0F14]"
       }`}
     >
       {label}
@@ -186,13 +186,13 @@ function TabRedirectCard({
   // and the legacy page handles the heavy lifting.
   return (
     <div className="rounded-xl border border-slate-100 bg-white px-6 py-7">
-      <h2 className="text-sm font-semibold text-[#0a1220]">{heading}</h2>
+      <h2 className="text-sm font-semibold text-[#0D0F14]">{heading}</h2>
       <p className="mt-1 text-xs text-slate-500 max-w-xl leading-relaxed">
         {body}
       </p>
       <Link
         href={href}
-        className="inline-block mt-4 rounded-lg bg-[#070d18] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f1c30]"
+        className="inline-block mt-4 rounded-lg bg-[#0D0F14] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1a1f2c]"
       >
         {cta} →
       </Link>

@@ -57,7 +57,7 @@ export default function SampleTransactionsToggle() {
         <button
           type="button"
           onClick={() => setShown((v) => !v)}
-          className="text-[11px] font-semibold text-[#00c49a] hover:text-[#00a882] transition-colors"
+          className="text-[11px] font-semibold text-[#5b48ff] hover:text-[#3B82F6] transition-colors"
         >
           {shown ? "Hide examples" : "Show examples"}
         </button>
@@ -88,7 +88,7 @@ export default function SampleTransactionsToggle() {
             <tbody className="divide-y divide-slate-50">
               {SAMPLE_ROWS.map((row, i) => (
                 <tr key={i} className="opacity-70">
-                  <td className="px-5 py-3.5 font-medium text-[#0a1220]">
+                  <td className="px-5 py-3.5 font-medium text-[#0D0F14]">
                     {row.service}
                   </td>
                   <td className="px-4 py-3.5 text-slate-500 text-xs truncate max-w-[180px] hidden sm:table-cell">
@@ -97,7 +97,7 @@ export default function SampleTransactionsToggle() {
                   <td className="px-4 py-3.5 text-slate-400 text-xs hidden md:table-cell">
                     {row.date}
                   </td>
-                  <td className="px-4 py-3.5 text-right font-semibold text-[#0a1220]">
+                  <td className="px-4 py-3.5 text-right font-semibold text-[#0D0F14]">
                     {row.amount}
                   </td>
                   <td className="px-5 py-3.5 text-right">

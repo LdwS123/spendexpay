@@ -85,10 +85,10 @@ export default function OnboardingBanner({
   // three step pills inline. Designed to take minimal vertical space so the
   // Overview's stats and chart remain the visual centre of the page.
   return (
-    <div className="mb-4 rounded-xl border border-[#00e5b4]/25 bg-gradient-to-r from-[#070d18] to-[#0a1322] px-4 py-3 text-white">
+    <div className="mb-4 rounded-xl border border-[#6D5BFF]/25 bg-gradient-to-r from-[#0D0F14] to-[#0a1322] px-4 py-3 text-white">
       <div className="flex items-center justify-between gap-3 mb-2">
         <p className="text-xs font-semibold flex items-center gap-2">
-          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[#00e5b4]" />
+          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[#6D5BFF]" />
           {headline}
           <span className="text-white/45 font-normal">
             {completed}/{total}
@@ -143,13 +143,13 @@ function CompactStep({
       onClick={onClick}
       className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
         done
-          ? "bg-[#00e5b4]/10 text-[#00e5b4] border border-[#00e5b4]/20"
+          ? "bg-[#6D5BFF]/10 text-[#6D5BFF] border border-[#6D5BFF]/20"
           : "bg-white/5 text-white/80 border border-white/10 hover:bg-white/10"
       }`}
     >
       <span
         className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-bold shrink-0 ${
-          done ? "bg-[#00e5b4] text-[#070d18]" : "bg-white/15 text-white/70"
+          done ? "bg-[#6D5BFF] text-[#0D0F14]" : "bg-white/15 text-white/70"
         }`}
         aria-hidden="true"
       >

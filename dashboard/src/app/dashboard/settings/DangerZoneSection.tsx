@@ -59,7 +59,7 @@ export default function DangerZoneSection() {
 
   return (
     <div className="bg-white rounded-xl border border-slate-100 p-6">
-      <h2 className="text-sm font-semibold text-[#0a1220] mb-1">Danger zone</h2>
+      <h2 className="text-sm font-semibold text-[#0D0F14] mb-1">Danger zone</h2>
       <p className="text-xs text-slate-400 mb-4">
         Permanent actions that cannot be undone.
       </p>

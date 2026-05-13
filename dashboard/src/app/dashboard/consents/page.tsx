@@ -80,7 +80,7 @@ export default async function ConsentsPage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
               Control
             </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0D0F14]">
               Approvals
             </h1>
             <p className="mt-1 text-xs text-slate-500">
@@ -89,7 +89,7 @@ export default async function ConsentsPage() {
         </div>
         <Link
           href="/dashboard/consents/preferences"
-          className="text-xs font-semibold text-[#00a882] hover:text-[#00e5b4] transition-colors"
+          className="text-xs font-semibold text-[#3B82F6] hover:text-[#6D5BFF] transition-colors"
         >
           Preferences →
         </Link>

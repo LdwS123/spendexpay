@@ -82,7 +82,7 @@ export default function AccountActions({
           type="button"
           onClick={togglePrimary}
           disabled={isRevoked || primaryLoading}
-          className="text-xs font-semibold text-[#0a1220] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-xs font-semibold text-[#0D0F14] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {primaryLoading
             ? "Updating…"
@@ -113,14 +113,14 @@ export default function AccountActions({
           role="dialog"
           aria-modal="true"
           aria-labelledby="revoke-account-title"
-          className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:px-4 bg-[#070d18]/50"
+          className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:px-4 bg-[#0D0F14]/50"
           onClick={() => !revoking && setConfirmRevoke(false)}
         >
           <div
             className="bg-white sm:rounded-2xl shadow-xl sm:border sm:border-slate-100 sm:max-w-sm w-full p-6 h-full sm:h-auto overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <p id="revoke-account-title" className="text-sm font-semibold text-[#0a1220]">
+            <p id="revoke-account-title" className="text-sm font-semibold text-[#0D0F14]">
               Revoke this managed account?
             </p>
             <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
@@ -133,7 +133,7 @@ export default function AccountActions({
                 type="button"
                 onClick={() => setConfirmRevoke(false)}
                 disabled={revoking}
-                className="text-xs font-semibold text-[#0a1220] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors disabled:opacity-50"
+                className="text-xs font-semibold text-[#0D0F14] bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>

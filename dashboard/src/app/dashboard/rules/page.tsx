@@ -345,7 +345,7 @@ export default function RulesPage() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
           Control
         </p>
-        <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+        <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0D0F14]">
           Rules
         </h1>
         <p className="mt-1 text-xs text-slate-500">
@@ -365,7 +365,7 @@ export default function RulesPage() {
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
             Current limits
           </p>
-          <p className="text-sm leading-relaxed text-[#070d18]">
+          <p className="text-sm leading-relaxed text-[#0D0F14]">
             Your agent can spend up to{" "}
             <span className="font-semibold">{perTxDisplay}</span>, capped at{" "}
             <span className="font-semibold">{monthlyDisplay}</span>, on{" "}
@@ -385,7 +385,7 @@ export default function RulesPage() {
         <div className="space-y-6 rounded-xl border border-slate-200/70 bg-white p-6">
           {/* ── Maximum per transaction ────────────────────────────────── */}
           <section>
-            <label htmlFor={perTxId} className="block text-sm font-semibold text-[#070d18] mb-1">
+            <label htmlFor={perTxId} className="block text-sm font-semibold text-[#0D0F14] mb-1">
               Maximum per transaction
             </label>
             <p className="text-xs text-slate-500 mb-3">
@@ -403,7 +403,7 @@ export default function RulesPage() {
                     onClick={() => setPerTx(String(amt))}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                       active
-                        ? "bg-[#00e5b4] border-[#00e5b4] text-[#070d18]"
+                        ? "bg-[#6D5BFF] border-[#6D5BFF] text-[#0D0F14]"
                         : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                     }`}
                   >
@@ -427,14 +427,14 @@ export default function RulesPage() {
                 value={perTx}
                 onChange={(e) => setPerTx(e.target.value)}
                 placeholder="Custom amount"
-                className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-500"
+                className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6D5BFF] focus:border-[#6D5BFF] disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
           </section>
 
           {/* ── Monthly budget ─────────────────────────────────────────── */}
           <section className="border-t border-slate-50 pt-5">
-            <label htmlFor={monthlyId} className="block text-sm font-semibold text-[#070d18] mb-1">
+            <label htmlFor={monthlyId} className="block text-sm font-semibold text-[#0D0F14] mb-1">
               Monthly budget
             </label>
             <p className="text-xs text-slate-500 mb-3">
@@ -452,7 +452,7 @@ export default function RulesPage() {
                     onClick={() => setMonthlyBudget(String(amt))}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                       active
-                        ? "bg-[#00e5b4] border-[#00e5b4] text-[#070d18]"
+                        ? "bg-[#6D5BFF] border-[#6D5BFF] text-[#0D0F14]"
                         : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                     }`}
                   >
@@ -476,14 +476,14 @@ export default function RulesPage() {
                 value={monthlyBudget}
                 onChange={(e) => setMonthlyBudget(e.target.value)}
                 placeholder="Custom amount"
-                className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-500"
+                className="w-full border border-slate-200 rounded-lg pl-6 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6D5BFF] focus:border-[#6D5BFF] disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
           </section>
 
           {/* ── Per-service limits ─────────────────────────────────────── */}
           <section className="border-t border-slate-50 pt-5">
-            <label className="block text-sm font-semibold text-[#070d18] mb-1">
+            <label className="block text-sm font-semibold text-[#0D0F14] mb-1">
               Per-service limits
             </label>
             <p className="text-xs text-slate-500 mb-3">
@@ -534,7 +534,7 @@ export default function RulesPage() {
                         >
                           {row.icon}
                         </span>
-                        <span className="text-sm font-medium text-[#070d18]">
+                        <span className="text-sm font-medium text-[#0D0F14]">
                           {row.label}
                         </span>
                       </div>
@@ -555,7 +555,7 @@ export default function RulesPage() {
                             }
                             placeholder="Monthly cap"
                             aria-label={`${row.label} monthly cap`}
-                            className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-500"
+                            className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#6D5BFF] focus:border-[#6D5BFF] disabled:bg-slate-50 disabled:text-slate-500"
                           />
                         </div>
 
@@ -574,7 +574,7 @@ export default function RulesPage() {
                             }
                             placeholder="Per-tx cap"
                             aria-label={`${row.label} per-transaction cap`}
-                            className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-500"
+                            className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#6D5BFF] focus:border-[#6D5BFF] disabled:bg-slate-50 disabled:text-slate-500"
                           />
                         </div>
 
@@ -624,13 +624,13 @@ export default function RulesPage() {
                 }}
                 placeholder="Add custom service (e.g. heroku)"
                 aria-label="Add custom service"
-                className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-400"
+                className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6D5BFF] focus:border-[#6D5BFF] disabled:bg-slate-50 disabled:text-slate-400"
               />
               <button
                 type="button"
                 disabled={loading || customServiceDraft.trim() === ""}
                 onClick={addCustomPerService}
-                className="px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 text-[#070d18] hover:border-[#00e5b4] hover:text-[#00876a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 text-[#0D0F14] hover:border-[#6D5BFF] hover:text-[#6D5BFF] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add
               </button>
@@ -640,9 +640,9 @@ export default function RulesPage() {
           {/* ── Smart rules (LLM-classified intents) ───────────────────── */}
           <section className="border-t border-slate-50 pt-5">
             <div className="mb-3">
-              <label className="block text-sm font-semibold text-[#070d18] mb-1">
+              <label className="block text-sm font-semibold text-[#0D0F14] mb-1">
                 Smart rules
-                <span className="ml-2 inline-flex items-center rounded-full bg-[#00e5b4]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#00876a]">
+                <span className="ml-2 inline-flex items-center rounded-full bg-[#6D5BFF]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#6D5BFF]">
                   AI
                 </span>
               </label>
@@ -656,7 +656,7 @@ export default function RulesPage() {
 
             {/* Block categories */}
             <div className="mb-5">
-              <p className="text-xs font-semibold text-[#070d18] mb-2">Block categories</p>
+              <p className="text-xs font-semibold text-[#0D0F14] mb-2">Block categories</p>
               <p className="text-xs text-slate-500 mb-2">
                 Any purchase the classifier puts in one of these buckets is declined,
                 even if the merchant is otherwise allowed.
@@ -692,7 +692,7 @@ export default function RulesPage() {
 
             {/* Category caps */}
             <div className="mb-5">
-              <p className="text-xs font-semibold text-[#070d18] mb-2">Monthly category caps</p>
+              <p className="text-xs font-semibold text-[#0D0F14] mb-2">Monthly category caps</p>
               <p className="text-xs text-slate-500 mb-2">
                 E.g. {CURRENCY_SYMBOL}50/month on shopping, {CURRENCY_SYMBOL}500/month on dev tools.
                 Leave blank to inherit the global monthly budget.
@@ -705,7 +705,7 @@ export default function RulesPage() {
                       key={cat.slug}
                       className="flex items-center gap-3 px-3 py-2.5"
                     >
-                      <span className="min-w-[110px] text-sm font-medium text-[#070d18]">
+                      <span className="min-w-[110px] text-sm font-medium text-[#0D0F14]">
                         {cat.label}
                       </span>
                       <div className="relative">
@@ -732,7 +732,7 @@ export default function RulesPage() {
                           }}
                           placeholder="Monthly cap"
                           aria-label={`${cat.label} monthly cap`}
-                          className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-500"
+                          className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#6D5BFF] focus:border-[#6D5BFF] disabled:bg-slate-50 disabled:text-slate-500"
                         />
                       </div>
                     </div>
@@ -744,7 +744,7 @@ export default function RulesPage() {
             {/* Risk threshold slider */}
             <div className="mb-5">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-[#070d18]">
+                <p className="text-xs font-semibold text-[#0D0F14]">
                   Risk threshold
                   <span className="ml-2 text-[11px] font-normal text-slate-400">
                     {riskThresholdEnabled ? `Decline if score > ${riskThreshold}` : "Disabled"}
@@ -756,7 +756,7 @@ export default function RulesPage() {
                     checked={riskThresholdEnabled}
                     onChange={(e) => setRiskThresholdEnabled(e.target.checked)}
                     disabled={loading}
-                    className="accent-[#00e5b4]"
+                    className="accent-[#6D5BFF]"
                   />
                   Enable
                 </label>
@@ -775,7 +775,7 @@ export default function RulesPage() {
                 value={riskThreshold}
                 onChange={(e) => setRiskThreshold(e.target.value)}
                 aria-label="Risk score threshold"
-                className="w-full accent-[#00e5b4]"
+                className="w-full accent-[#6D5BFF]"
               />
               <div className="flex justify-between text-[10px] text-slate-400 mt-1">
                 <span>0 — safe</span>
@@ -792,10 +792,10 @@ export default function RulesPage() {
                   checked={urgencyRequiresConsent}
                   onChange={(e) => setUrgencyRequiresConsent(e.target.checked)}
                   disabled={loading}
-                  className="mt-0.5 accent-[#00e5b4]"
+                  className="mt-0.5 accent-[#6D5BFF]"
                 />
                 <div>
-                  <p className="text-sm font-medium text-[#070d18]">
+                  <p className="text-sm font-medium text-[#0D0F14]">
                     Require consent for high-urgency purchases
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
@@ -810,7 +810,7 @@ export default function RulesPage() {
 
           {/* ── Merchant category locks ────────────────────────────────── */}
           <section className="border-t border-slate-50 pt-5">
-            <label className="block text-sm font-semibold text-[#070d18] mb-1">
+            <label className="block text-sm font-semibold text-[#0D0F14] mb-1">
               Merchant category locks
             </label>
             <p className="text-xs text-slate-400 mb-3">
@@ -824,11 +824,11 @@ export default function RulesPage() {
                   className="flex items-start gap-3 px-4 py-3"
                 >
                   <span
-                    className="mt-1 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#00e5b4]/15"
+                    className="mt-1 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#6D5BFF]/15"
                     aria-hidden="true"
                   >
                     <svg
-                      className="h-2.5 w-2.5 text-[#00876a]"
+                      className="h-2.5 w-2.5 text-[#6D5BFF]"
                       viewBox="0 0 12 12"
                       fill="none"
                       stroke="currentColor"
@@ -842,7 +842,7 @@ export default function RulesPage() {
                     </svg>
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-[#070d18]">{cat.label}</p>
+                    <p className="text-sm font-medium text-[#0D0F14]">{cat.label}</p>
                     <p className="text-xs text-slate-500 mt-0.5">{cat.description}</p>
                   </div>
                 </div>
@@ -855,7 +855,7 @@ export default function RulesPage() {
               further, contact{" "}
               <a
                 href="mailto:support@spendexai.com"
-                className="underline underline-offset-2 hover:text-[#070d18] transition-colors"
+                className="underline underline-offset-2 hover:text-[#0D0F14] transition-colors"
               >
                 support
               </a>
@@ -865,7 +865,7 @@ export default function RulesPage() {
 
           {/* ── Merchant exclusions ────────────────────────────────────── */}
           <section className="border-t border-slate-50 pt-5">
-            <label htmlFor={merchantId} className="block text-sm font-semibold text-[#070d18] mb-1">
+            <label htmlFor={merchantId} className="block text-sm font-semibold text-[#0D0F14] mb-1">
               Merchant exclusions
             </label>
             <p className="text-xs text-slate-500 mb-3">
@@ -887,13 +887,13 @@ export default function RulesPage() {
                   }
                 }}
                 placeholder="e.g. heroku, openai"
-                className="flex-1 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-400"
+                className="flex-1 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6D5BFF] focus:border-[#6D5BFF] disabled:bg-slate-50 disabled:text-slate-400"
               />
               <button
                 type="button"
                 disabled={loading || merchantDraft.trim() === ""}
                 onClick={addMerchant}
-                className="px-4 py-2.5 rounded-lg text-sm font-medium border border-slate-200 text-[#070d18] hover:border-[#00e5b4] hover:text-[#00876a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2.5 rounded-lg text-sm font-medium border border-slate-200 text-[#0D0F14] hover:border-[#6D5BFF] hover:text-[#6D5BFF] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add
               </button>
@@ -929,7 +929,7 @@ export default function RulesPage() {
 
           {/* ── Emergency stop ─────────────────────────────────────────── */}
           <section className="border-t border-slate-50 pt-5">
-            <label className="block text-sm font-semibold text-[#070d18] mb-3">
+            <label className="block text-sm font-semibold text-[#0D0F14] mb-3">
               Emergency stop
             </label>
             <div className="flex items-start gap-3 rounded-lg border border-amber-100 bg-amber-50 p-4">
@@ -973,10 +973,10 @@ export default function RulesPage() {
               disabled={loading || saveState === "saving"}
               className={`font-semibold text-sm px-5 py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                 saveState === "saved"
-                  ? "bg-[#00e5b4]/15 text-[#00a882]"
+                  ? "bg-[#6D5BFF]/15 text-[#3B82F6]"
                   : saveState === "error"
                   ? "bg-red-50 text-red-600 border border-red-200"
-                  : "bg-[#00e5b4] hover:bg-[#00c49a] text-[#070d18]"
+                  : "bg-[#6D5BFF] hover:bg-[#5b48ff] text-[#0D0F14]"
               }`}
             >
               {saveState === "saving"

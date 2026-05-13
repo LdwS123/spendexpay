@@ -70,7 +70,7 @@ function RefundRow({ r }: { r: RefundRequest }) {
     <li className="bg-white border border-slate-100 rounded-xl px-5 py-4 flex items-center gap-4">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-semibold text-[#0a1220]">
+          <span className="text-sm font-semibold text-[#0D0F14]">
             {REASON_LABEL[r.reason] ?? r.reason}
           </span>
           <span
@@ -98,13 +98,13 @@ function RefundRow({ r }: { r: RefundRequest }) {
       </div>
 
       <div className="shrink-0 text-right">
-        <p className="text-sm font-semibold tabular-nums text-[#0a1220]">
+        <p className="text-sm font-semibold tabular-nums text-[#0D0F14]">
           {formatAmount(amount)}
         </p>
         {r.audit_log_id && (
           <Link
             href={`/dashboard/transactions/${r.audit_log_id}`}
-            className="text-[11px] text-slate-400 hover:text-[#0a1220] transition-colors"
+            className="text-[11px] text-slate-400 hover:text-[#0D0F14] transition-colors"
           >
             View transaction →
           </Link>
@@ -129,7 +129,7 @@ export default async function RefundsPage() {
   } catch {
     return (
       <main className="px-4 sm:px-8 py-8">
-        <h1 className="text-lg font-semibold text-[#0a1220]">Refunds</h1>
+        <h1 className="text-lg font-semibold text-[#0D0F14]">Refunds</h1>
         <p className="text-sm text-slate-500 mt-2">
           Database client unavailable. Please try again later.
         </p>
@@ -184,7 +184,7 @@ export default async function RefundsPage() {
   return (
     <main>
       <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-5">
-        <h1 className="text-lg font-semibold text-[#0a1220]">Refunds</h1>
+        <h1 className="text-lg font-semibold text-[#0D0F14]">Refunds</h1>
         <p className="text-xs text-slate-500 mt-0.5">
           Disputed charges and their resolution status.
         </p>
@@ -197,7 +197,7 @@ export default async function RefundsPage() {
             <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
               Total refunded this year
             </p>
-            <p className="text-2xl font-bold text-[#0a1220] tabular-nums mt-1">
+            <p className="text-2xl font-bold text-[#0D0F14] tabular-nums mt-1">
               {formatAmount(totalRefundedThisYear)}
             </p>
           </div>

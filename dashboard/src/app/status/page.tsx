@@ -47,9 +47,9 @@ function overallTone(status: OverallStatus): BadgeTone {
 
 const TONE_STYLES: Record<BadgeTone, { dot: string; text: string; chip: string }> = {
   ok: {
-    dot: "bg-[#00e5b4]",
-    text: "text-[#00e5b4]",
-    chip: "bg-[#00e5b4]/10 text-[#00e5b4] ring-1 ring-[#00e5b4]/30",
+    dot: "bg-[#6D5BFF]",
+    text: "text-[#6D5BFF]",
+    chip: "bg-[#6D5BFF]/10 text-[#6D5BFF] ring-1 ring-[#6D5BFF]/30",
   },
   degraded: {
     dot: "bg-amber-400",
@@ -160,7 +160,7 @@ export default function StatusPage() {
         : "Major outage";
 
   return (
-    <main className="min-h-screen bg-[#070d18] text-white">
+    <main className="min-h-screen bg-[#0D0F14] text-white">
       <div className="mx-auto max-w-3xl px-6 py-16">
         <header className="mb-10">
           <p className="text-xs uppercase tracking-widest text-white/40">

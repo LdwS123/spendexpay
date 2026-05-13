@@ -137,7 +137,7 @@ function TransactionRow({ tx, isNew }: { tx: AuditLog; isNew: boolean }) {
     <Link
       href={`/dashboard/transactions/${tx.id}`}
       aria-label={`Transaction ${capitalise(tx.service)} ${amount} on ${formatDate(tx.created_at)}, status ${tx.status}`}
-      className={`relative block border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 transition-colors cursor-pointer min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4] focus-visible:ring-inset ${
+      className={`relative block border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 transition-colors cursor-pointer min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF] focus-visible:ring-inset ${
         isNew ? "realtime-flash" : ""
       }`}
     >
@@ -148,12 +148,12 @@ function TransactionRow({ tx, isNew }: { tx: AuditLog; isNew: boolean }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-sm font-semibold text-[#0a1220] truncate">
+            <span className="text-sm font-semibold text-[#0D0F14] truncate">
               {capitalise(tx.service)}
             </span>
             <span
               className={`text-base font-semibold tabular-nums shrink-0 ${
-                tx.status === "success" ? "text-[#0a1220]" : "text-slate-500"
+                tx.status === "success" ? "text-[#0D0F14]" : "text-slate-500"
               }`}
             >
               {amount}
@@ -176,7 +176,7 @@ function TransactionRow({ tx, isNew }: { tx: AuditLog; isNew: boolean }) {
               {formatDate(tx.created_at)}
             </span>
             {isNew && (
-              <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#00e5b4]/20 text-[#00a882] uppercase tracking-wide">
+              <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#6D5BFF]/20 text-[#3B82F6] uppercase tracking-wide">
                 New
               </span>
             )}
@@ -191,10 +191,10 @@ function TransactionRow({ tx, isNew }: { tx: AuditLog; isNew: boolean }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-[#0a1220]">{capitalise(tx.service)}</span>
+            <span className="text-sm font-medium text-[#0D0F14]">{capitalise(tx.service)}</span>
             <TypeChip type={tx.transaction_type} />
             {isNew && (
-              <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#00e5b4]/20 text-[#00a882] uppercase tracking-wide">
+              <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#6D5BFF]/20 text-[#3B82F6] uppercase tracking-wide">
                 New
               </span>
             )}
@@ -210,7 +210,7 @@ function TransactionRow({ tx, isNew }: { tx: AuditLog; isNew: boolean }) {
           <StatusBadge status={tx.status} />
         </div>
         <div className="shrink-0 w-20 text-right">
-          <span className={`text-sm font-semibold tabular-nums ${tx.status === "success" ? "text-[#0a1220]" : "text-slate-500"}`}>
+          <span className={`text-sm font-semibold tabular-nums ${tx.status === "success" ? "text-[#0D0F14]" : "text-slate-500"}`}>
             {amount}
           </span>
         </div>
@@ -366,7 +366,7 @@ export default function TransactionsClient({
             <div className="text-5xl mb-4" aria-hidden="true">
               📊
             </div>
-            <p className="text-base font-semibold text-[#0a1220]">
+            <p className="text-base font-semibold text-[#0D0F14]">
               No transactions yet
             </p>
             <p className="text-sm text-slate-500 mt-1.5 max-w-sm leading-relaxed">
@@ -375,15 +375,15 @@ export default function TransactionsClient({
             </p>
 
             {/* Install snippet — same visual language as the Overview page. */}
-            <div className="mt-6 w-full max-w-md rounded-lg bg-[#070d18] px-4 py-3 text-left">
+            <div className="mt-6 w-full max-w-md rounded-lg bg-[#0D0F14] px-4 py-3 text-left">
               <pre className="font-mono text-[13px] leading-relaxed text-white whitespace-pre-wrap break-all">
-                <span className="text-[#00e5b4]">$</span> claude mcp add spendex
+                <span className="text-[#6D5BFF]">$</span> claude mcp add spendex
               </pre>
             </div>
 
             <Link
               href="/docs"
-              className="inline-flex items-center gap-1 mt-5 text-xs font-semibold text-[#00c49a] hover:text-[#00a882] transition-colors"
+              className="inline-flex items-center gap-1 mt-5 text-xs font-semibold text-[#5b48ff] hover:text-[#3B82F6] transition-colors"
             >
               View install docs →
             </Link>

@@ -74,7 +74,7 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
               Access
             </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0D0F14]">
               MCP tokens
             </h1>
             <p className="mt-1 text-xs text-slate-500">
@@ -86,7 +86,7 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
             type="button"
             onClick={generate}
             disabled={loading}
-              className="rounded-lg bg-[#070d18] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f1c30] disabled:opacity-50"
+              className="rounded-lg bg-[#0D0F14] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1a1f2c] disabled:opacity-50"
           >
               {loading ? "Generating..." : "Generate token"}
           </button>
@@ -103,8 +103,8 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
 
         {/* One-time token reveal banner */}
         {newToken && (
-          <div className="rounded-xl border border-[#00e5b4]/30 bg-[#00e5b4]/8 p-4">
-            <p className="text-xs font-medium text-[#00a882] mb-2">
+          <div className="rounded-xl border border-[#6D5BFF]/30 bg-[#6D5BFF]/8 p-4">
+            <p className="text-xs font-medium text-[#3B82F6] mb-2">
               New token — copy it now, it won&apos;t be shown again
             </p>
             <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-3 py-2.5">
@@ -115,7 +115,7 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
                 type="button"
                 onClick={() => copy(newToken)}
                 aria-label={copied ? "Token copied to clipboard" : "Copy MCP token"}
-                className="text-xs font-semibold text-[#00876a] hover:text-[#00a882] shrink-0 transition-colors px-2 py-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]"
+                className="text-xs font-semibold text-[#6D5BFF] hover:text-[#3B82F6] shrink-0 transition-colors px-2 py-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF]"
               >
                 {copied ? "Copied!" : "Copy"}
               </button>
@@ -166,7 +166,7 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
                   type="button"
                   onClick={generate}
                   disabled={loading}
-                  className="text-xs text-slate-500 hover:text-slate-700 font-medium transition-colors disabled:opacity-50 px-2 py-2 min-h-[44px] sm:min-h-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]"
+                  className="text-xs text-slate-500 hover:text-slate-700 font-medium transition-colors disabled:opacity-50 px-2 py-2 min-h-[44px] sm:min-h-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF]"
                 >
                   {loading ? "Working..." : "Rotate"}
                 </button>
@@ -184,8 +184,8 @@ export default function TokensClient({ hasToken: initialHasToken, createdAt }: P
         )}
 
         {/* Usage snippet */}
-        <div className="rounded-xl bg-[#070d18] p-5">
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[#00e5b4]">
+        <div className="rounded-xl bg-[#0D0F14] p-5">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[#6D5BFF]">
             Cursor / Claude config
           </p>
           <pre className="text-[10px] text-white/40 font-mono leading-relaxed whitespace-pre">

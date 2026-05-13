@@ -80,7 +80,7 @@ export default function DecisionButtons({
           const isBusy = busyOption === option;
           const baseCls = isDecline
             ? "border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50"
-            : "border-[#00e5b4] bg-[#00e5b4] text-[#070d18] hover:bg-[#00c49a]";
+            : "border-[#6D5BFF] bg-[#6D5BFF] text-[#0D0F14] hover:bg-[#5b48ff]";
           return (
             <button
               key={option}

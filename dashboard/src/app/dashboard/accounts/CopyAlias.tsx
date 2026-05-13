@@ -33,14 +33,14 @@ export default function CopyAlias({ alias }: Props) {
 
   return (
     <div className="flex items-center gap-2">
-      <code className="flex-1 min-w-0 font-mono text-xs text-[#0a1220] bg-slate-50 border border-slate-100 rounded-md px-2.5 py-1.5 truncate">
+      <code className="flex-1 min-w-0 font-mono text-xs text-[#0D0F14] bg-slate-50 border border-slate-100 rounded-md px-2.5 py-1.5 truncate">
         {alias}
       </code>
       <button
         type="button"
         onClick={copy}
         aria-label={copied ? `${alias} copied to clipboard` : `Copy alias ${alias}`}
-        className="text-[11px] font-semibold text-slate-700 hover:text-[#0a1220] border border-slate-200 hover:border-slate-300 bg-white rounded-md px-2.5 py-2 min-h-[44px] sm:min-h-0 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]"
+        className="text-[11px] font-semibold text-slate-700 hover:text-[#0D0F14] border border-slate-200 hover:border-slate-300 bg-white rounded-md px-2.5 py-2 min-h-[44px] sm:min-h-0 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5BFF]"
       >
         {copied ? "Copied" : "Copy"}
       </button>

@@ -192,7 +192,7 @@ export default function RefundRequestPanel({ auditLogId, eligible }: Props) {
         </span>
         <Link
           href="/dashboard/refunds"
-          className="text-[#0a1220] underline decoration-slate-300 hover:decoration-slate-500 text-xs"
+          className="text-[#0D0F14] underline decoration-slate-300 hover:decoration-slate-500 text-xs"
         >
           View refund details
         </Link>
@@ -210,7 +210,7 @@ export default function RefundRequestPanel({ auditLogId, eligible }: Props) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg border border-slate-200 text-[#0a1220] hover:bg-slate-50 transition-colors"
+          className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg border border-slate-200 text-[#0D0F14] hover:bg-slate-50 transition-colors"
         >
           <svg
             className="w-4 h-4"
@@ -252,7 +252,7 @@ export default function RefundRequestPanel({ auditLogId, eligible }: Props) {
             <div className="px-6 py-5 border-b border-slate-100">
               <h2
                 id="refund-modal-title"
-                className="text-base font-semibold text-[#0a1220]"
+                className="text-base font-semibold text-[#0D0F14]"
               >
                 Request a refund
               </h2>
@@ -273,7 +273,7 @@ export default function RefundRequestPanel({ auditLogId, eligible }: Props) {
                       key={r.value}
                       className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                         reason === r.value
-                          ? "border-[#0a1220] bg-slate-50"
+                          ? "border-[#0D0F14] bg-slate-50"
                           : "border-slate-200 hover:border-slate-300"
                       }`}
                     >
@@ -283,10 +283,10 @@ export default function RefundRequestPanel({ auditLogId, eligible }: Props) {
                         value={r.value}
                         checked={reason === r.value}
                         onChange={() => setReason(r.value)}
-                        className="mt-0.5 accent-[#0a1220]"
+                        className="mt-0.5 accent-[#0D0F14]"
                       />
                       <span>
-                        <span className="text-sm font-medium text-[#0a1220] block">
+                        <span className="text-sm font-medium text-[#0D0F14] block">
                           {r.label}
                         </span>
                         <span className="text-xs text-slate-500 block mt-0.5">
@@ -311,7 +311,7 @@ export default function RefundRequestPanel({ auditLogId, eligible }: Props) {
                   onChange={(e) => setExplanation(e.target.value)}
                   rows={3}
                   maxLength={2000}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm placeholder-slate-300 focus:outline-none focus:border-[#0a1220]"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm placeholder-slate-300 focus:outline-none focus:border-[#0D0F14]"
                   placeholder="Anything that helps us resolve this faster."
                 />
               </div>
@@ -333,7 +333,7 @@ export default function RefundRequestPanel({ auditLogId, eligible }: Props) {
               <button
                 type="submit"
                 disabled={submitting || !reason}
-                className="text-sm font-semibold px-4 py-2 rounded-lg bg-[#0a1220] text-white hover:bg-[#1a2333] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-sm font-semibold px-4 py-2 rounded-lg bg-[#0D0F14] text-white hover:bg-[#1a2333] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? "Submitting…" : "Submit request"}
               </button>

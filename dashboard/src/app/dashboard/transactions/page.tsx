@@ -58,7 +58,7 @@ function FilterLink({
       href={href}
       className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
         active
-          ? "bg-[#0a1220] text-white border-[#0a1220]"
+          ? "bg-[#0D0F14] text-white border-[#0D0F14]"
           : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
       }`}
     >
@@ -129,7 +129,7 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
               Ledger
             </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0D0F14]">
               Transactions
             </h1>
             <p className="mt-1 text-xs text-slate-500">

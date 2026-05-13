@@ -134,7 +134,7 @@ function DetailRow({
       <dt className="w-44 shrink-0 text-xs font-medium text-slate-400 uppercase tracking-wide pt-0.5">
         {label}
       </dt>
-      <dd className="flex-1 text-sm text-[#0a1220] break-all">{children}</dd>
+      <dd className="flex-1 text-sm text-[#0D0F14] break-all">{children}</dd>
     </div>
   );
 }
@@ -209,7 +209,7 @@ export default async function TransactionDetailPage({ params }: PageProps) {
       <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4 flex items-center gap-4">
         <Link
           href="/dashboard/transactions"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-[#0a1220] transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-[#0D0F14] transition-colors"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2} aria-hidden="true">
             <path d="M10 3L5 8l5 5" strokeLinecap="round" strokeLinejoin="round" />
@@ -220,7 +220,7 @@ export default async function TransactionDetailPage({ params }: PageProps) {
         <div className="h-4 w-px bg-slate-200" />
 
         <div>
-          <h1 className="text-lg font-semibold text-[#0a1220]">Transaction detail</h1>
+          <h1 className="text-lg font-semibold text-[#0D0F14]">Transaction detail</h1>
           <p className="text-xs text-slate-400 mt-0.5 font-mono">{tx.id}</p>
         </div>
       </header>
@@ -235,7 +235,7 @@ export default async function TransactionDetailPage({ params }: PageProps) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="text-base font-semibold text-[#0a1220]">
+                <span className="text-base font-semibold text-[#0D0F14]">
                   {capitalise(tx.service)}
                 </span>
                 {tx.transaction_type && (
@@ -252,7 +252,7 @@ export default async function TransactionDetailPage({ params }: PageProps) {
             <div className="shrink-0 text-right">
               <p
                 className={`text-xl sm:text-2xl font-bold tabular-nums ${
-                  tx.status === "success" ? "text-[#0a1220]" : "text-slate-300"
+                  tx.status === "success" ? "text-[#0D0F14]" : "text-slate-300"
                 }`}
               >
                 {tx.amount_usd != null ? formatAmount(tx.amount_usd) : "—"}
@@ -313,7 +313,7 @@ export default async function TransactionDetailPage({ params }: PageProps) {
         {/* Back link at the bottom */}
         <Link
           href="/dashboard/transactions"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-[#0a1220] transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-[#0D0F14] transition-colors"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2} aria-hidden="true">
             <path d="M10 3L5 8l5 5" strokeLinecap="round" strokeLinejoin="round" />

@@ -66,8 +66,8 @@ function formatDateTime(iso: string): string {
 function StatusBadge({ status }: { status: string }) {
   if (status === "active") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#00e5b4]/15 text-[#00a882]">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#00a882]" />
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#6D5BFF]/15 text-[#3B82F6]">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
         Active
       </span>
     );
@@ -210,7 +210,7 @@ export default async function AccountDetailPage({ params }: PageProps) {
           >
             ← All managed accounts
           </Link>
-          <h1 className="text-lg font-semibold text-[#0a1220] mt-1">
+          <h1 className="text-lg font-semibold text-[#0D0F14] mt-1">
             {serviceLabel(account.service)} managed account
           </h1>
         </div>
@@ -250,7 +250,7 @@ export default async function AccountDetailPage({ params }: PageProps) {
                 <p className="text-[11px] font-medium text-slate-500 mb-1.5">
                   External account ID
                 </p>
-                <code className="font-mono text-xs text-[#0a1220] bg-slate-50 border border-slate-100 rounded-md px-2.5 py-1.5 inline-block break-all">
+                <code className="font-mono text-xs text-[#0D0F14] bg-slate-50 border border-slate-100 rounded-md px-2.5 py-1.5 inline-block break-all">
                   {account.external_account_id}
                 </code>
               </div>
@@ -286,7 +286,7 @@ export default async function AccountDetailPage({ params }: PageProps) {
                   className="px-6 py-3.5 flex items-start gap-4 hover:bg-slate-50/60 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#0a1220] truncate">
+                    <p className="text-sm font-medium text-[#0D0F14] truncate">
                       {email.subject ?? "(no subject)"}
                     </p>
                     <p className="text-[11px] text-slate-400 mt-0.5 truncate">
@@ -299,7 +299,7 @@ export default async function AccountDetailPage({ params }: PageProps) {
                       href={email.verification_link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] font-semibold text-[#00a882] hover:text-[#00e5b4] transition-colors shrink-0"
+                      className="text-[11px] font-semibold text-[#3B82F6] hover:text-[#6D5BFF] transition-colors shrink-0"
                     >
                       Open link →
                     </a>

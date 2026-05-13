@@ -130,8 +130,8 @@ function ServiceLogo({ service }: { service: string }) {
 function StatusBadge({ status }: { status: string }) {
   if (status === "active") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#00e5b4]/15 text-[#00a882]">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#00a882]" />
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#6D5BFF]/15 text-[#3B82F6]">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
         Active
       </span>
     );
@@ -267,7 +267,7 @@ export default async function AccountsPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
             Access
           </p>
-          <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+          <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0D0F14]">
             Managed accounts
           </h1>
           <p className="mt-1 text-xs text-slate-500">
@@ -327,11 +327,11 @@ function AccountCard({ account }: { account: ManagedAccountWithCount }) {
     <div className="bg-white border border-slate-100 rounded-xl p-5 flex flex-col gap-4 hover:border-slate-200 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-[#0a1220] shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-[#0D0F14] shrink-0">
             <ServiceLogo service={account.service} />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[#0a1220] truncate">
+            <p className="text-sm font-semibold text-[#0D0F14] truncate">
               {serviceLabel(account.service)}
             </p>
             <p className="text-[11px] text-slate-400 mt-0.5">
@@ -371,7 +371,7 @@ function AccountCard({ account }: { account: ManagedAccountWithCount }) {
         </div>
         <Link
           href={`/dashboard/accounts/${account.id}`}
-          className="text-xs font-semibold text-[#00a882] hover:text-[#00e5b4] transition-colors"
+          className="text-xs font-semibold text-[#3B82F6] hover:text-[#6D5BFF] transition-colors"
         >
           View details →
         </Link>

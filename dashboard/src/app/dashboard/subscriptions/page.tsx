@@ -92,7 +92,7 @@ export default async function SubscriptionsPage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
               Ledger
             </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0a1220]">
+            <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#0D0F14]">
               Subscriptions
             </h1>
             <p className="mt-1 text-xs text-slate-500">

@@ -32,7 +32,7 @@ function CustomTooltip({
   return (
     <div className="bg-white border border-slate-100 rounded-lg px-3 py-2 shadow-sm text-xs">
       <p className="text-slate-400 mb-0.5">{label}</p>
-      <p className="font-semibold text-[#0a1220]">
+      <p className="font-semibold text-[#0D0F14]">
         {new Intl.NumberFormat("en-IE", {
           style: "currency",
           currency: "EUR",
@@ -56,8 +56,8 @@ export default function SpendingChart({ data }: { data: DayData[] }) {
           <AreaChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="spendGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#00e5b4" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#00e5b4" stopOpacity={0} />
+                <stop offset="5%" stopColor="#6D5BFF" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="#6D5BFF" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid
@@ -83,11 +83,11 @@ export default function SpendingChart({ data }: { data: DayData[] }) {
             <Area
               type="monotone"
               dataKey="amount"
-              stroke="#00e5b4"
+              stroke="#6D5BFF"
               strokeWidth={2}
               fill="url(#spendGradient)"
               dot={false}
-              activeDot={{ r: 4, fill: "#00e5b4", strokeWidth: 0 }}
+              activeDot={{ r: 4, fill: "#6D5BFF", strokeWidth: 0 }}
             />
           </AreaChart>
         </ResponsiveContainer>

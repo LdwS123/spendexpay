@@ -75,8 +75,8 @@ function StatusBadge({ status }: { status: ConsentStatus }) {
   }
   if (status === "approved") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#00e5b4]/15 text-[#00a882]">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#00a882]" />
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#6D5BFF]/15 text-[#3B82F6]">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
         Approved
       </span>
     );
@@ -202,7 +202,7 @@ export default async function ConsentDetailPage({ params }: PageProps) {
           >
             ← All consents
           </Link>
-          <h1 className="text-lg font-semibold text-[#0a1220] mt-1">
+          <h1 className="text-lg font-semibold text-[#0D0F14] mt-1">
             {consent.action ?? "Consent request"}{" "}
             <span className="text-slate-400 font-normal">
               · {serviceLabel(consent.service)}
@@ -274,7 +274,7 @@ export default async function ConsentDetailPage({ params }: PageProps) {
               This request expired before a decision was made.
             </p>
           ) : consent.decision ? (
-            <p className="text-sm text-[#0a1220]">
+            <p className="text-sm text-[#0D0F14]">
               Decided:{" "}
               <span className="font-semibold">{consent.decision}</span>
               {consent.decision_made_at && (
@@ -301,7 +301,7 @@ function Row({ label, value }: { label: string; value: string }) {
       <dt className="text-xs font-medium text-slate-400 min-w-[80px] pt-0.5">
         {label}
       </dt>
-      <dd className="text-sm text-[#0a1220] break-words">{value}</dd>
+      <dd className="text-sm text-[#0D0F14] break-words">{value}</dd>
     </div>
   );
 }

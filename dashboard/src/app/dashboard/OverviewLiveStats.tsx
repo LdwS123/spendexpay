@@ -59,7 +59,7 @@ function StatCard({ label, value, sub, pulse }: StatCardProps) {
       <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-3">
         {label}
       </p>
-      <p className="text-xl sm:text-2xl font-bold text-[#0a1220] tracking-tight">
+      <p className="text-xl sm:text-2xl font-bold text-[#0D0F14] tracking-tight">
         {value}
       </p>
       <p className="text-[11px] text-slate-400 mt-1">{sub}</p>
