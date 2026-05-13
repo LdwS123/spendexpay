@@ -52,30 +52,26 @@ import { config } from "../../config.js";
 import { routePayment } from "../../lib/payments/router.js";
 import { triggerVercelDeploy } from "../../lib/vercel.js";
 import { registerDeployVercelTool } from "../../tools/deploy-vercel.js";
+import {
+  createHandlerCapture,
+  makeDeployUser,
+  makeMockCharge,
+} from "../fixtures.js";
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
 // ---------------------------------------------------------------------------
 
-const MOCK_USER = {
-  id: "user_123",
-  email: "t@t.com",
-  payment_method: "stripe_card" as const,
-  payment_provider_customer_id: "cus_test" as any,
+const MOCK_USER = makeDeployUser({
   vercel_token: "vercel_tok_abc",
   netlify_token: "nlf",
   railway_token: "rly",
   fly_token: "fly",
   replicate_token: "rep",
   render_token: "rnd",
-  max_auto_charge_usd: 50,
-};
+});
 
-const MOCK_CHARGE = {
-  outcome: "charged" as const,
-  transactionId: "pi_mock",
-  paymentMethod: "stripe_card" as const,
-};
+const MOCK_CHARGE = makeMockCharge();
 
 const MOCK_DEPLOY_RESULT = {
   url: "https://my-app.vercel.app",
@@ -88,18 +84,9 @@ const INPUT = { project_name: "my-app", mcp_token: "spx_" + "a".repeat(32) };
 // Handler capture — registered once for all tests
 // ---------------------------------------------------------------------------
 
-let handler:
-  | ((input: any) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>)
-  | undefined;
-
-const mockServer = { tool: vi.fn() };
+const { mockServer, getHandler } = createHandlerCapture();
 
 beforeAll(() => {
-  mockServer.tool.mockImplementation(
-    (_name: string, _desc: string, _schema: any, h: any) => {
-      handler = h;
-    }
-  );
   registerDeployVercelTool(mockServer as any);
 });
 
@@ -138,7 +125,7 @@ describe("registerDeployVercelTool — rate limit denied", () => {
       retryAfterMs: 8000,
     });
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Too many requests/);
@@ -151,7 +138,7 @@ describe("registerDeployVercelTool — emergency stop", () => {
   it("returns isError:true with maintenance message when emergencyStop is true", async () => {
     (config as any).emergencyStop = true;
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     (config as any).emergencyStop = false;
 
@@ -164,7 +151,7 @@ describe("registerDeployVercelTool — invalid MCP token", () => {
   it("returns isError:true with 'Invalid or expired' when getUserByMcpToken returns null", async () => {
     vi.mocked(getUserByMcpToken).mockResolvedValue(null as any);
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Invalid or expired/);
@@ -175,7 +162,7 @@ describe("registerDeployVercelTool — payment failure", () => {
   it("returns isError:true with 'Payment failed' and logs payment_failed when routePayment throws", async () => {
     vi.mocked(routePayment).mockRejectedValue(new Error("Card declined"));
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Payment failed/);
@@ -192,7 +179,7 @@ describe("registerDeployVercelTool — deploy failure after payment", () => {
       new Error("Vercel API error 500: Internal Server Error")
     );
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     const text = result.content[0].text;
@@ -207,7 +194,7 @@ describe("registerDeployVercelTool — deploy failure after payment", () => {
 
 describe("registerDeployVercelTool — success", () => {
   it("returns the deployment URL and logs success on a fully successful deploy", async () => {
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toContain("my-app.vercel.app");
@@ -226,7 +213,7 @@ describe("registerDeployVercelTool — team_slug in description", () => {
       mcp_token: "spx_" + "b".repeat(32),
     };
 
-    const result = await handler!(inputWithTeam);
+    const result = await getHandler()!(inputWithTeam);
 
     // Must succeed so logTransaction is called with the success payload
     expect(result.isError).toBeUndefined();

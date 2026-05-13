@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { config, DEV_MODE } from "../config.js";
 import { getUserByMcpToken, logTransaction } from "../lib/db.js";
-import { acquireIdempotencyKey, releaseIdempotencyKey } from "../lib/idempotency.js";
+import { acquireIdempotencyKey, buildIdempotencyKey, releaseIdempotencyKey } from "../lib/idempotency.js";
 import { routePayment } from "../lib/payments/router.js";
 import { checkRateLimit } from "../lib/rate-limit.js";
 import { runHuggingFaceInference } from "../lib/huggingface.js";
@@ -146,9 +146,7 @@ export function registerRunHuggingFaceInferenceTool(server: McpServer) {
         }
 
         const runDescription = `Hugging Face inference: ${input.model_id}`;
-        // Millisecond timestamp so each retry attempt gets a fresh idempotency
-        // key — see CLAUDE.md for the Stripe 24h-cache rationale.
-        const idempotencyKey = `${user.id}-huggingface-${input.model_id}-${Date.now()}`;
+        const idempotencyKey = buildIdempotencyKey(user.id, "huggingface", input.model_id);
         const inputsHash = hashInputs(input.inputs);
 
         let transactionId: string | null = null;

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createClient } from "@supabase/supabase-js";
+import { getAdminClient } from "@/lib/supabase";
 import { log } from "@/lib/log";
 
 export const dynamic = "force-dynamic";
@@ -69,18 +69,16 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
 async function checkSupabase(): Promise<ServiceCheck> {
   const start = Date.now();
   try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !serviceKey) {
+    let client;
+    try {
+      client = getAdminClient();
+    } catch (err) {
       return {
         status: "down",
         latency_ms: Date.now() - start,
-        error: "missing supabase env vars",
+        error: err instanceof Error ? err.message : "missing supabase env vars",
       };
     }
-    const client = createClient(url, serviceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
     // Lightweight probe: ask Supabase to count rows in a tiny table. Using
     // `head: true, count: 'exact'` keeps the payload to a single integer and
     // works even if the table is empty. `users` is expected to exist; if not,

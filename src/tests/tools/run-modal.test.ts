@@ -47,31 +47,19 @@ import { routePayment } from "../../lib/payments/router.js";
 import { runModalFunction } from "../../lib/modal.js";
 import { registerRunModalTool } from "../../tools/run-modal.js";
 import { ProviderError } from "../../lib/provider-error.js";
+import {
+  createHandlerCapture,
+  makeDeployUser,
+  makeMockCharge,
+} from "../fixtures.js";
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
 // ---------------------------------------------------------------------------
 
-const MOCK_USER = {
-  id: "user_123",
-  email: "t@t.com",
-  payment_method: "stripe_card" as const,
-  payment_provider_customer_id: "cus_test" as any,
-  vercel_token: "v",
-  netlify_token: "nlf_tok",
-  railway_token: "rly_tok",
-  fly_token: "fly_tok",
-  replicate_token: "rep_tok",
-  render_token: "rnd_tok",
-  modal_token: "modal_tok",
-  max_auto_charge_usd: 50,
-};
+const MOCK_USER = makeDeployUser({ modal_token: "modal_tok" });
 
-const MOCK_CHARGE = {
-  outcome: "charged" as const,
-  transactionId: "pi_mock",
-  paymentMethod: "stripe_card" as const,
-};
+const MOCK_CHARGE = makeMockCharge();
 
 const MOCK_MODAL_RESULT = {
   callId: "call_abc123",
@@ -89,18 +77,9 @@ const INPUT = {
 // Handler capture — registered once for all tests
 // ---------------------------------------------------------------------------
 
-let handler:
-  | ((input: any) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>)
-  | undefined;
-
-const mockServer = { tool: vi.fn() };
+const { mockServer, getHandler } = createHandlerCapture();
 
 beforeAll(() => {
-  mockServer.tool.mockImplementation(
-    (_name: string, _desc: string, _schema: any, h: any) => {
-      handler = h;
-    }
-  );
   registerRunModalTool(mockServer as any);
 });
 
@@ -134,7 +113,7 @@ describe("registerRunModalTool — rate limit denied", () => {
       retryAfterMs: 5000,
     });
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Too many requests/);
@@ -149,7 +128,7 @@ describe("registerRunModalTool — missing modal_token", () => {
       modal_token: "",
     } as any);
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/not configured/);
@@ -161,7 +140,7 @@ describe("registerRunModalTool — payment failure", () => {
   it("returns isError:true with 'Payment failed' and logs payment_failed when routePayment throws", async () => {
     vi.mocked(routePayment).mockRejectedValue(new Error("Card declined"));
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Payment failed/);
@@ -183,7 +162,7 @@ describe("registerRunModalTool — Modal function fails after payment", () => {
       )
     );
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     const text = result.content[0].text;
@@ -197,7 +176,7 @@ describe("registerRunModalTool — Modal function fails after payment", () => {
 
 describe("registerRunModalTool — success", () => {
   it("returns the URL and callId in the response and logs success on a fully successful run", async () => {
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBeUndefined();
     const text = result.content[0].text;
@@ -216,7 +195,7 @@ describe("registerRunModalTool — invalid input_json", () => {
       new ProviderError("unknown", "inputJson is not valid JSON.", "modal")
     );
 
-    const result = await handler!({ ...INPUT, input_json: "not-valid-json" });
+    const result = await getHandler()!({ ...INPUT, input_json: "not-valid-json" });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Modal run failed/);

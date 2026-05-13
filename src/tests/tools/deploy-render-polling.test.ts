@@ -51,15 +51,19 @@ import { checkRateLimit } from "../../lib/rate-limit.js";
 import { routePayment } from "../../lib/payments/router.js";
 import { registerDeployRenderTool } from "../../tools/deploy-render.js";
 import { ProviderError } from "../../lib/provider-error.js";
+import {
+  createHandlerCapture,
+  makeDeployUser,
+  makeMockCharge,
+} from "../fixtures.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const MOCK_USER = {
+const MOCK_USER = makeDeployUser({
   id: "user_render_poll",
   email: "renderpoll@test.com",
-  payment_method: "stripe_card" as const,
   payment_provider_customer_id: "cus_render_poll" as any,
   vercel_token: "vercel_tok",
   netlify_token: "nlf",
@@ -67,14 +71,9 @@ const MOCK_USER = {
   fly_token: "fly",
   replicate_token: "rep",
   render_token: "rnd_tok_poll",
-  max_auto_charge_usd: 50,
-};
+});
 
-const MOCK_CHARGE = {
-  outcome: "charged" as const,
-  transactionId: "pi_render_poll_mock",
-  paymentMethod: "stripe_card" as const,
-};
+const MOCK_CHARGE = makeMockCharge({ transactionId: "pi_render_poll_mock" });
 
 // triggerRenderDeploy always resolves to this in the happy path
 const TRIGGER_RESULT = {
@@ -88,18 +87,9 @@ const INPUT = { service_id: "srv-poll123", mcp_token: "spx_render_poll_token" };
 // Handler capture
 // ---------------------------------------------------------------------------
 
-let handler:
-  | ((input: any) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>)
-  | undefined;
-
-const mockServer = { tool: vi.fn() };
+const { mockServer, getHandler } = createHandlerCapture();
 
 beforeAll(() => {
-  mockServer.tool.mockImplementation(
-    (_name: string, _desc: string, _schema: any, h: any) => {
-      handler = h;
-    }
-  );
   registerDeployRenderTool(mockServer as any);
 });
 
@@ -134,7 +124,7 @@ describe("deploy_to_render — polling integration", () => {
     const polledUrl = "https://dashboard.render.com/web/srv-poll123";
     mockPollRenderDeploy.mockResolvedValue({ url: polledUrl, state: "live" });
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toContain(polledUrl);
@@ -152,7 +142,7 @@ describe("deploy_to_render — polling integration", () => {
       )
     );
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Render deploy failed/i);
@@ -173,7 +163,7 @@ describe("deploy_to_render — polling integration", () => {
       )
     );
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Render deploy failed/i);
@@ -189,7 +179,7 @@ describe("deploy_to_render — polling integration", () => {
     // poll returns the canonical URL — the tool must use the polled one
     mockPollRenderDeploy.mockResolvedValue({ url: polledUrl, state: "live" });
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBeUndefined();
     // Final URL must be the polled URL, not the original trigger URL
@@ -202,7 +192,7 @@ describe("deploy_to_render — polling integration", () => {
       new ProviderError("server_error", "Render 500", "render", 500)
     );
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     // pollRenderDeploy must not have been called at all

@@ -3,6 +3,20 @@
 // A duplicate key while still in-flight returns a cached error.
 // After completion the key is removed so legitimate retries (after failure) work.
 
+// Build a Stripe-compatible idempotency key.
+//
+// Format: `{userId}-{service}-{projectName}-{Date.now()}`
+//
+// The millisecond timestamp is deliberate. Stripe caches PaymentIntent results
+// for 24h keyed by this string. If a charge fails (decline, network timeout),
+// reusing the same key returns the cached failure rather than re-running the
+// charge. The timestamp ensures every retry attempt gets a fresh key.
+//
+// See CLAUDE.md → "Idempotency key format" for the canonical rationale.
+export function buildIdempotencyKey(userId: string, service: string, projectName: string): string {
+  return `${userId}-${service}-${projectName}-${Date.now()}`;
+}
+
 const inFlight = new Map<string, { startedAt: number }>();
 const WINDOW_MS = 30_000; // 30 seconds — if a request hasn't completed in 30s, allow retry
 

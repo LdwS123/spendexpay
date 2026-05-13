@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { config, DEV_MODE } from "../config.js";
 import { getUserByMcpToken, logTransaction } from "../lib/db.js";
-import { acquireIdempotencyKey, releaseIdempotencyKey } from "../lib/idempotency.js";
+import { acquireIdempotencyKey, buildIdempotencyKey, releaseIdempotencyKey } from "../lib/idempotency.js";
 import { routePayment } from "../lib/payments/router.js";
 import { checkRateLimit } from "../lib/rate-limit.js";
 
@@ -92,9 +92,7 @@ export function registerTopUpServiceTool(server: McpServer): void {
 
       try {
         const topUpDescription = `Add $${input.amount_usd.toFixed(2)} credits to ${input.service_name}`;
-        // Millisecond timestamp ensures each attempt gets a fresh idempotency key,
-        // so Stripe re-runs the charge rather than returning a cached failure.
-        const idempotencyKey = `${user.id}-topup-${input.service_name}-${Date.now()}`;
+        const idempotencyKey = buildIdempotencyKey(user.id, "topup", input.service_name);
 
         let transactionId: string | null = null;
 

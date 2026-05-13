@@ -51,15 +51,19 @@ import { checkRateLimit } from "../../lib/rate-limit.js";
 import { routePayment } from "../../lib/payments/router.js";
 import { registerDeployNetlifyTool } from "../../tools/deploy-netlify.js";
 import { ProviderError } from "../../lib/provider-error.js";
+import {
+  createHandlerCapture,
+  makeDeployUser,
+  makeMockCharge,
+} from "../fixtures.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const MOCK_USER = {
+const MOCK_USER = makeDeployUser({
   id: "user_poll",
   email: "poll@test.com",
-  payment_method: "stripe_card" as const,
   payment_provider_customer_id: "cus_poll" as any,
   vercel_token: "v",
   netlify_token: "nlf_tok_poll",
@@ -67,14 +71,9 @@ const MOCK_USER = {
   fly_token: "fly",
   replicate_token: "rep",
   render_token: "rnd",
-  max_auto_charge_usd: 50,
-};
+});
 
-const MOCK_CHARGE = {
-  outcome: "charged" as const,
-  transactionId: "pi_poll_mock",
-  paymentMethod: "stripe_card" as const,
-};
+const MOCK_CHARGE = makeMockCharge({ transactionId: "pi_poll_mock" });
 
 // triggerNetlifyDeploy always resolves to this in the polling tests
 const TRIGGER_RESULT = {
@@ -88,18 +87,9 @@ const INPUT = { site_id: "my-poll-site", mcp_token: "spx_poll_token" };
 // Handler capture
 // ---------------------------------------------------------------------------
 
-let handler:
-  | ((input: any) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>)
-  | undefined;
-
-const mockServer = { tool: vi.fn() };
+const { mockServer, getHandler } = createHandlerCapture();
 
 beforeAll(() => {
-  mockServer.tool.mockImplementation(
-    (_name: string, _desc: string, _schema: any, h: any) => {
-      handler = h;
-    }
-  );
   registerDeployNetlifyTool(mockServer as any);
 });
 
@@ -134,7 +124,7 @@ describe("deploy_to_netlify — polling integration", () => {
     const polledUrl = "https://polled-ready.netlify.app";
     mockPollNetlifyDeploy.mockResolvedValue({ url: polledUrl, state: "ready" });
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toContain(polledUrl);
@@ -152,7 +142,7 @@ describe("deploy_to_netlify — polling integration", () => {
       )
     );
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/netlify|deploy failed/i);
@@ -173,7 +163,7 @@ describe("deploy_to_netlify — polling integration", () => {
       )
     );
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/netlify|deploy failed/i);
@@ -189,7 +179,7 @@ describe("deploy_to_netlify — polling integration", () => {
     // poll returns a different URL — the tool must use the polled one
     mockPollNetlifyDeploy.mockResolvedValue({ url: polledUrl, state: "ready" });
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBeUndefined();
     // Final URL must be the polled URL, not the original trigger URL
@@ -202,7 +192,7 @@ describe("deploy_to_netlify — polling integration", () => {
       new ProviderError("server_error", "Netlify 500", "netlify", 500)
     );
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     // pollNetlifyDeploy must not have been called at all

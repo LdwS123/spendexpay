@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { config, DEV_MODE } from "../config.js";
 import { getUserByMcpToken, logTransaction } from "../lib/db.js";
-import { acquireIdempotencyKey, releaseIdempotencyKey } from "../lib/idempotency.js";
+import { acquireIdempotencyKey, buildIdempotencyKey, releaseIdempotencyKey } from "../lib/idempotency.js";
 import { routePayment } from "../lib/payments/router.js";
 import { checkRateLimit } from "../lib/rate-limit.js";
 import { triggerGammaGeneration, pollGammaGeneration } from "../lib/gamma.js";
@@ -127,12 +127,7 @@ export function registerGenerateGammaTool(server: McpServer): void {
       try {
         const format = input.format ?? "presentation";
         const generationDescription = `Gamma generation: ${format} (${input.input_text.length} chars)`;
-        // Include a millisecond timestamp so each generation attempt gets a
-        // unique idempotency key. A day-granular key would cause Stripe to
-        // cache the result of the first attempt and return it (including a
-        // "failed" status) for all retries within the same calendar day,
-        // preventing recovery from failures.
-        const idempotencyKey = `${user.id}-gamma-${promptGuard}-${Date.now()}`;
+        const idempotencyKey = buildIdempotencyKey(user.id, "gamma", promptGuard);
 
         let transactionId: string | null = null;
 

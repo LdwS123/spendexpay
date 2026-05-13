@@ -60,15 +60,19 @@ import { getUserByMcpToken, logTransaction } from "../../lib/db.js";
 import { checkRateLimit } from "../../lib/rate-limit.js";
 import { routePayment } from "../../lib/payments/router.js";
 import { registerDeployVercelTool } from "../../tools/deploy-vercel.js";
+import {
+  createHandlerCapture,
+  makeDeployUser,
+  makeMockCharge,
+} from "../fixtures.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const MOCK_USER = {
+const MOCK_USER = makeDeployUser({
   id: "user_idem",
   email: "idem@test.com",
-  payment_method: "stripe_card" as const,
   payment_provider_customer_id: "cus_idem" as any,
   vercel_token: "vercel_tok_idem",
   netlify_token: "nlf",
@@ -76,14 +80,9 @@ const MOCK_USER = {
   fly_token: "fly",
   replicate_token: "rep",
   render_token: "rnd",
-  max_auto_charge_usd: 50,
-};
+});
 
-const MOCK_CHARGE = {
-  outcome: "charged" as const,
-  transactionId: "pi_idem_mock",
-  paymentMethod: "stripe_card" as const,
-};
+const MOCK_CHARGE = makeMockCharge({ transactionId: "pi_idem_mock" });
 
 const MOCK_DEPLOY_RESULT = {
   deploymentId: "dpl_idem",
@@ -96,18 +95,9 @@ const INPUT = { project_name: "idem-app", mcp_token: "spx_" + "c".repeat(32) };
 // Handler capture — registered once for all tests
 // ---------------------------------------------------------------------------
 
-let handler:
-  | ((input: any) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>)
-  | undefined;
-
-const mockServer = { tool: vi.fn() };
+const { mockServer, getHandler } = createHandlerCapture();
 
 beforeAll(() => {
-  mockServer.tool.mockImplementation(
-    (_name: string, _desc: string, _schema: any, h: any) => {
-      handler = h;
-    }
-  );
   registerDeployVercelTool(mockServer as any);
 });
 
@@ -149,7 +139,7 @@ describe("deploy_to_vercel — idempotency guard", () => {
   it("1. First call proceeds normally and returns a success response", async () => {
     mockAcquireIdempotencyKey.mockReturnValue(true);
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toContain("idem-app.vercel.app");
@@ -161,7 +151,7 @@ describe("deploy_to_vercel — idempotency guard", () => {
     // Simulate key already held by first in-flight request
     mockAcquireIdempotencyKey.mockReturnValue(false);
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/already in progress/i);
@@ -173,7 +163,7 @@ describe("deploy_to_vercel — idempotency guard", () => {
   it("3. After first call completes, second call proceeds normally (routePayment is called)", async () => {
     // First call: key acquired and released (handler runs to completion)
     mockAcquireIdempotencyKey.mockReturnValue(true);
-    await handler!(INPUT);
+    await getHandler()!(INPUT);
 
     // Reset call counts for the second call
     vi.mocked(routePayment).mockClear();
@@ -182,7 +172,7 @@ describe("deploy_to_vercel — idempotency guard", () => {
 
     // Second call: key is free again (first call released it)
     mockAcquireIdempotencyKey.mockReturnValue(true);
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBeUndefined();
     expect(vi.mocked(routePayment)).toHaveBeenCalledOnce();

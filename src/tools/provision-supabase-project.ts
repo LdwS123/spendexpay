@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { config, DEV_MODE } from "../config.js";
 import { getUserByMcpToken, logTransaction } from "../lib/db.js";
-import { acquireIdempotencyKey, releaseIdempotencyKey } from "../lib/idempotency.js";
+import { acquireIdempotencyKey, buildIdempotencyKey, releaseIdempotencyKey } from "../lib/idempotency.js";
 import { routePayment } from "../lib/payments/router.js";
 import { checkRateLimit } from "../lib/rate-limit.js";
 import {
@@ -148,9 +148,7 @@ export function registerProvisionSupabaseProjectTool(server: McpServer): void {
           `(plan: ${input.plan}, region: ${input.region}` +
           `${costUsd > 0 ? `, $${costUsd.toFixed(2)}/month` : ""})`;
 
-        // Millisecond timestamp ensures each attempt gets a fresh idempotency key,
-        // so Stripe re-runs the charge rather than returning a cached failure.
-        const idempotencyKey = `${user.id}-supabase-project-${input.project_name}-${Date.now()}`;
+        const idempotencyKey = buildIdempotencyKey(user.id, "supabase-project", input.project_name);
 
         let transactionId: string | null = null;
 

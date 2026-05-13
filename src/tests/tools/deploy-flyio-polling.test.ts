@@ -51,15 +51,19 @@ import { checkRateLimit } from "../../lib/rate-limit.js";
 import { routePayment } from "../../lib/payments/router.js";
 import { registerDeployFlyioTool } from "../../tools/deploy-flyio.js";
 import { ProviderError } from "../../lib/provider-error.js";
+import {
+  createHandlerCapture,
+  makeDeployUser,
+  makeMockCharge,
+} from "../fixtures.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const MOCK_USER = {
+const MOCK_USER = makeDeployUser({
   id: "user_fly_poll",
   email: "poll@fly.test",
-  payment_method: "stripe_card" as const,
   payment_provider_customer_id: "cus_fly_poll" as any,
   vercel_token: "v",
   netlify_token: "nlf",
@@ -67,14 +71,9 @@ const MOCK_USER = {
   fly_token: "fly_tok_poll",
   replicate_token: "rep",
   render_token: "rnd",
-  max_auto_charge_usd: 50,
-};
+});
 
-const MOCK_CHARGE = {
-  outcome: "charged" as const,
-  transactionId: "pi_fly_poll_mock",
-  paymentMethod: "stripe_card" as const,
-};
+const MOCK_CHARGE = makeMockCharge({ transactionId: "pi_fly_poll_mock" });
 
 // triggerFlyDeploy always resolves to this in the happy path
 const TRIGGER_RESULT = {
@@ -88,18 +87,9 @@ const INPUT = { app_name: "my-poll-app", mcp_token: "spx_fly_poll_token" };
 // Handler capture
 // ---------------------------------------------------------------------------
 
-let handler:
-  | ((input: any) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>)
-  | undefined;
-
-const mockServer = { tool: vi.fn() };
+const { mockServer, getHandler } = createHandlerCapture();
 
 beforeAll(() => {
-  mockServer.tool.mockImplementation(
-    (_name: string, _desc: string, _schema: any, h: any) => {
-      handler = h;
-    }
-  );
   registerDeployFlyioTool(mockServer as any);
 });
 
@@ -134,7 +124,7 @@ describe("deploy_to_flyio — polling integration", () => {
     const polledUrl = "https://my-poll-app.fly.dev";
     mockPollFlyDeployment.mockResolvedValue({ url: polledUrl, state: "complete" });
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toContain(polledUrl);
@@ -152,7 +142,7 @@ describe("deploy_to_flyio — polling integration", () => {
       )
     );
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Fly\.io deploy failed/i);
@@ -173,7 +163,7 @@ describe("deploy_to_flyio — polling integration", () => {
       )
     );
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Fly\.io deploy failed/i);
@@ -188,7 +178,7 @@ describe("deploy_to_flyio — polling integration", () => {
     // TRIGGER_RESULT has url: "https://my-poll-app.fly.dev" — poll returns a different one
     mockPollFlyDeployment.mockResolvedValue({ url: polledUrl, state: "complete" });
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBeUndefined();
     // Final URL must be the polled URL, not the original trigger URL
@@ -201,7 +191,7 @@ describe("deploy_to_flyio — polling integration", () => {
       new ProviderError("server_error", "Fly.io 500", "flyio", 500)
     );
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     // pollFlyDeployment must not have been called at all

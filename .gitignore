@@ -54,6 +54,9 @@ coverage/
 playwright-report/
 test-results/
 
+# Screenshot artifacts at repo root (brand assets live in dashboard/public/)
+/*.png
+
 # Stripe CLI
 .stripe/
 

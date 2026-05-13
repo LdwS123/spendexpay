@@ -51,30 +51,19 @@ import { checkRateLimit } from "../../lib/rate-limit.js";
 import { routePayment } from "../../lib/payments/router.js";
 import { triggerFlyDeploy } from "../../lib/flyio.js";
 import { registerDeployFlyioTool } from "../../tools/deploy-flyio.js";
+import {
+  createHandlerCapture,
+  makeDeployUser,
+  makeMockCharge,
+} from "../fixtures.js";
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
 // ---------------------------------------------------------------------------
 
-const MOCK_USER = {
-  id: "user_123",
-  email: "t@t.com",
-  payment_method: "stripe_card" as const,
-  payment_provider_customer_id: "cus_test" as any,
-  vercel_token: "v",
-  netlify_token: "nlf_tok",
-  railway_token: "rly_tok",
-  fly_token: "fly_tok",
-  replicate_token: "rep_tok",
-  render_token: "rnd_tok",
-  max_auto_charge_usd: 50,
-};
+const MOCK_USER = makeDeployUser();
 
-const MOCK_CHARGE = {
-  outcome: "charged" as const,
-  transactionId: "pi_mock",
-  paymentMethod: "stripe_card" as const,
-};
+const MOCK_CHARGE = makeMockCharge();
 
 const MOCK_DEPLOY_RESULT = {
   releaseId: "rel_123",
@@ -87,18 +76,9 @@ const INPUT = { app_name: "my-fly-app", mcp_token: "spx_tok" };
 // Handler capture — registered once for all tests
 // ---------------------------------------------------------------------------
 
-let handler:
-  | ((input: any) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>)
-  | undefined;
-
-const mockServer = { tool: vi.fn() };
+const { mockServer, getHandler } = createHandlerCapture();
 
 beforeAll(() => {
-  mockServer.tool.mockImplementation(
-    (_name: string, _desc: string, _schema: any, h: any) => {
-      handler = h;
-    }
-  );
   registerDeployFlyioTool(mockServer as any);
 });
 
@@ -134,7 +114,7 @@ describe("registerDeployFlyioTool — rate limit denied", () => {
       retryAfterMs: 10000,
     });
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Too many requests/);
@@ -148,7 +128,7 @@ describe("registerDeployFlyioTool — emergency stop", () => {
     const configMod = await import("../../config.js");
     (configMod.config as any).emergencyStop = true;
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     (configMod.config as any).emergencyStop = false;
 
@@ -161,7 +141,7 @@ describe("registerDeployFlyioTool — invalid MCP token", () => {
   it("returns isError:true with 'Invalid or expired' when getUserByMcpToken returns null", async () => {
     vi.mocked(getUserByMcpToken).mockResolvedValue(null as any);
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Invalid or expired/);
@@ -175,7 +155,7 @@ describe("registerDeployFlyioTool — missing Fly.io token", () => {
       fly_token: "",
     } as any);
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/No Fly\.io token/);
@@ -186,7 +166,7 @@ describe("registerDeployFlyioTool — payment failure", () => {
   it("returns isError:true with 'Payment failed' and logs payment_failed when routePayment throws", async () => {
     vi.mocked(routePayment).mockRejectedValue(new Error("Card requires authentication"));
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/Payment failed/);
@@ -203,7 +183,7 @@ describe("registerDeployFlyioTool — deploy failure after payment", () => {
       new Error("Fly.io API error 422: app not found")
     );
 
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBe(true);
     const text = result.content[0].text;
@@ -217,7 +197,7 @@ describe("registerDeployFlyioTool — deploy failure after payment", () => {
 
 describe("registerDeployFlyioTool — success", () => {
   it("returns the app URL and logs success on a fully successful deploy", async () => {
-    const result = await handler!(INPUT);
+    const result = await getHandler()!(INPUT);
 
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toContain("my-fly-app.fly.dev");
@@ -228,7 +208,7 @@ describe("registerDeployFlyioTool — success", () => {
   });
 
   it("passes app_name through to triggerFlyDeploy", async () => {
-    await handler!(INPUT);
+    await getHandler()!(INPUT);
 
     expect(vi.mocked(triggerFlyDeploy)).toHaveBeenCalledWith(
       expect.objectContaining({ appName: "my-fly-app" })

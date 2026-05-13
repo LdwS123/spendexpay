@@ -36,6 +36,8 @@ vi.mock("../../lib/payments/router.js", () => ({
 vi.mock("../../lib/idempotency.js", () => ({
   acquireIdempotencyKey: vi.fn(),
   releaseIdempotencyKey: vi.fn(),
+  buildIdempotencyKey: (userId: string, service: string, projectName: string) =>
+    `${userId}-${service}-${projectName}-${Date.now()}`,
 }));
 
 // ---------------------------------------------------------------------------

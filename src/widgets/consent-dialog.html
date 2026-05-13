@@ -367,6 +367,48 @@
     opacity: 0.55;
     pointer-events: none;
   }
+  /* "Why is this safe?" disclosure — collapsed by default so the dialog
+     stays scannable; the user expands it on demand. Pure CSS via <details>
+     so we don't need extra JS for the toggle. */
+  .safety {
+    margin-top: 14px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+  .safety summary {
+    cursor: pointer;
+    list-style: none;
+    font-size: 12px;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+  }
+  .safety summary::-webkit-details-marker { display: none; }
+  .safety summary:hover { color: var(--ink); }
+  .safety summary::before {
+    content: "▸";
+    font-size: 10px;
+    transition: transform 120ms ease;
+  }
+  .safety[open] summary::before { transform: rotate(90deg); }
+  .safety summary .lock {
+    color: var(--accent);
+    font-size: 11px;
+  }
+  .safety-body {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .safety-body ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+  .safety-body li { margin: 4px 0; }
+  .safety-body li strong { color: var(--ink); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -419,6 +461,31 @@
       <button class="btn-secondary" id="declineBtn">Decline</button>
       <button class="btn-primary" id="approveBtn">Approve &amp; pay</button>
     </div>
+    <details class="safety">
+      <summary>
+        <span class="lock">&#x1F512;</span>
+        Why is this safe?
+      </summary>
+      <div class="safety-body">
+        <ul>
+          <li>
+            <strong>Spendex card</strong> — pays this merchant on your behalf via a
+            virtual Stripe Issuing card. The merchant never sees your real card,
+            bank account, or billing identity.
+          </li>
+          <li>
+            <strong>Rules engine</strong> — every charge is checked against your
+            per-transaction and monthly caps in &lt;2s. A charge above your limits
+            is auto-declined before it settles.
+          </li>
+          <li>
+            <strong>Audit log</strong> — every consent, charge, and refund is
+            recorded with timestamp, merchant, amount, and reason. View it
+            anytime in your Spendex dashboard.
+          </li>
+        </ul>
+      </div>
+    </details>
     <div class="status" id="status"></div>
   </div>
 </div>
@@ -450,18 +517,41 @@ const { App } = globalThis.ExtApps;
     defaultImageUrl: null,
   };
 
+  // Render an amount in its native currency using Intl.NumberFormat. We
+  // keep the currency code separate from the numeric value so the dialog
+  // can lay them out independently (small "USD" beside a large amount).
+  // Falls back to USD when an unknown code is passed.
   function fmtAmount(amount, currency) {
     const c = (currency || "USD").toUpperCase();
-    const symbol = c === "EUR" ? "EUR" : c === "GBP" ? "GBP" : "USD";
     const n = Number(amount);
-    if (!Number.isFinite(n)) return { currency: symbol, value: "--" };
-    return { currency: symbol, value: n.toFixed(2) };
+    if (!Number.isFinite(n)) return { currency: c, value: "--" };
+    try {
+      const formatter = new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      return { currency: c, value: formatter.format(n) };
+    } catch {
+      return { currency: c, value: n.toFixed(2) };
+    }
   }
 
-  function fmtUsd(n) {
+  // Currency-aware compact formatter used in the "Within your rules" lines.
+  // Always renders a leading currency symbol (e.g. "$1,200.00") so the value
+  // is unambiguous at a glance. Defaults to USD when the payload omits it.
+  function fmtMoney(n, currency) {
     const v = Number(n);
     if (!Number.isFinite(v)) return "--";
-    return "$" + v.toFixed(2);
+    const c = (currency || "USD").toUpperCase();
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: c,
+        currencyDisplay: "narrowSymbol",
+      }).format(v);
+    } catch {
+      return "$" + v.toFixed(2);
+    }
   }
 
   // Compute the current total: (base + sum of selected price deltas) * qty.
