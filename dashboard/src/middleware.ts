@@ -45,6 +45,19 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // ── Legacy URL redirects ────────────────────────────────────────────────
+  // The dashboard navigation was condensed from 9 items to 5. The legacy
+  // pages themselves still exist (deep links, bookmarks, in-product
+  // emails), but the canonical V1 surface is now /dashboard/activity for
+  // every charge & order. Honour the old transactions URL with a redirect
+  // so saved links keep working.
+  if (pathname === "/dashboard/transactions") {
+    const next = request.nextUrl.clone();
+    next.pathname = "/dashboard/activity";
+    // request.nextUrl.clone() already preserves searchParams.
+    return NextResponse.redirect(next);
+  }
+
   // Unauthenticated user trying to access a protected route → send to /login.
   if (!user && pathname.startsWith("/dashboard")) {
     const loginUrl = request.nextUrl.clone();

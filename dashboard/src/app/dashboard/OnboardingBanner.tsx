@@ -76,38 +76,24 @@ export default function OnboardingBanner({
 
   const headline =
     completed === 0
-      ? "Welcome to Spendex Pay. Complete your setup in 3 steps:"
+      ? "Finish setup — 3 steps."
       : completed === total - 1
-        ? "Almost there: 1 step left"
-        : `Setup in progress — ${total - completed} steps left`;
+        ? "1 step left."
+        : `${total - completed} steps left.`;
 
+  // Compact two-line banner: row 1 is the headline + dismiss; row 2 is the
+  // three step pills inline. Designed to take minimal vertical space so the
+  // Overview's stats and chart remain the visual centre of the page.
   return (
-    <div className="mb-5 rounded-xl border border-[#00e5b4]/30 bg-gradient-to-br from-[#070d18] via-[#0a1322] to-[#0e1a2d] px-5 py-4 text-white">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#00e5b4]/15 text-[#00e5b4]">
-              <svg
-                className="h-3.5 w-3.5"
-                fill="none"
-                viewBox="0 0 16 16"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                aria-hidden="true"
-              >
-                <path
-                  d="M8 2C8 2 4.5 4 4 8c-.25 2 .5 3.5 1.5 4.5M8 2c0 0 3.5 2 4 6 .25 2-.5 3.5-1.5 4.5M8 2v10"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-            <p className="text-sm font-semibold">{headline}</p>
-          </div>
-          <p className="mt-1 ml-10 text-[11px] text-white/50">
-            {completed} of {total} complete
-          </p>
-        </div>
+    <div className="mb-4 rounded-xl border border-[#00e5b4]/25 bg-gradient-to-r from-[#070d18] to-[#0a1322] px-4 py-3 text-white">
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <p className="text-xs font-semibold flex items-center gap-2">
+          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[#00e5b4]" />
+          {headline}
+          <span className="text-white/45 font-normal">
+            {completed}/{total}
+          </span>
+        </p>
         <button
           type="button"
           onClick={handleDismiss}
@@ -118,47 +104,34 @@ export default function OnboardingBanner({
         </button>
       </div>
 
-      {/* Progress bar */}
-      <div className="mt-3 ml-10 mr-2 h-1 rounded-full bg-white/10 overflow-hidden">
-        <div
-          className="h-full bg-[#00e5b4] transition-all duration-300"
-          style={{ width: `${(completed / total) * 100}%` }}
-        />
-      </div>
-
-      <ol className="mt-4 ml-10 grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <Step
-          number={1}
-          label="Connect funding source"
+      <div className="flex flex-wrap gap-1.5">
+        <CompactStep
+          label="Connect funding"
           done={hasFundingSource}
-          href="/dashboard/payments"
+          href="/dashboard/wallet"
         />
-        <Step
-          number={2}
+        <CompactStep
           label="Generate MCP token"
           done={hasMcpToken}
           href="/dashboard/tokens"
         />
-        <Step
-          number={3}
-          label="Install in your agent"
+        <CompactStep
+          label="Install in agent"
           done={step3Done}
           href="/docs"
           onClick={step3Done ? undefined : markStep3Done}
         />
-      </ol>
+      </div>
     </div>
   );
 }
 
-function Step({
-  number,
+function CompactStep({
   label,
   done,
   href,
   onClick,
 }: {
-  number: number;
   label: string;
   done: boolean;
   href: string;
@@ -168,21 +141,21 @@ function Step({
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+      className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
         done
           ? "bg-[#00e5b4]/10 text-[#00e5b4] border border-[#00e5b4]/20"
           : "bg-white/5 text-white/80 border border-white/10 hover:bg-white/10"
       }`}
     >
       <span
-        className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold shrink-0 ${
-          done ? "bg-[#00e5b4] text-[#070d18]" : "bg-white/10 text-white/70"
+        className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-bold shrink-0 ${
+          done ? "bg-[#00e5b4] text-[#070d18]" : "bg-white/15 text-white/70"
         }`}
         aria-hidden="true"
       >
         {done ? (
           <svg
-            className="h-3 w-3"
+            className="h-2 w-2"
             fill="none"
             viewBox="0 0 12 12"
             stroke="currentColor"
@@ -191,10 +164,11 @@ function Step({
             <path d="M2.5 6.5L5 9l4.5-5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ) : (
-          number
+          "·"
         )}
       </span>
       <span className="truncate">{label}</span>
     </Link>
   );
 }
+

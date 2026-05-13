@@ -64,7 +64,7 @@ export default function AnomalyBanner() {
       ? "Your agent is making lots of charges fast."
       : null;
 
-  const linkHref = showFastDeclines ? "/dashboard/consents" : "/dashboard/transactions";
+  const linkHref = showFastDeclines ? "/dashboard/consents" : "/dashboard/activity";
 
   if (!message) return null;
 

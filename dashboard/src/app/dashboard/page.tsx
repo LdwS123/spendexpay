@@ -6,6 +6,7 @@ import OverviewLiveStats from "./OverviewLiveStats";
 import OnboardingBanner from "./OnboardingBanner";
 import SampleTransactionsToggle from "./SampleTransactionsToggle";
 import AnomalyBanner from "./AnomalyBanner";
+import PainKillerBanner from "./PainKillerBanner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -319,10 +320,10 @@ export default async function DashboardPage() {
             </h1>
         </div>
         <Link
-          href="/dashboard/payments"
+          href="/dashboard/wallet"
             className="rounded-lg bg-[#070d18] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f1c30]"
         >
-            Manage funding
+            Manage wallet
         </Link>
         </div>
       </header>
@@ -370,6 +371,10 @@ export default async function DashboardPage() {
         {data.isEmpty ? (
           // ── Onboarding / Get Started ─────────────────────────────────────
           <>
+            {/* Pain-killer pitch — visible only while the user has no
+                transactions on file. Vanishes after the first charge. */}
+            <PainKillerBanner />
+
             {/* Stat cards — all zeroed */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-7">
               <StatCard label="Spent this month" value="€0.00" sub="No transactions yet" />
@@ -398,7 +403,7 @@ export default async function DashboardPage() {
                       number={1}
                       title="Connect funding"
                       description="Add the payment method used to fund agent purchases."
-                      action={{ label: "Manage funding", href: "/dashboard/payments" }}
+                      action={{ label: "Open wallet", href: "/dashboard/wallet" }}
                     />
                     <OnboardingStep
                       number={2}
@@ -476,10 +481,10 @@ export default async function DashboardPage() {
                   <p className="text-xs text-slate-400 mt-0.5">Last 5 charge attempts.</p>
                 </div>
                 <Link
-                  href="/dashboard/transactions"
+                  href="/dashboard/activity"
                   className="text-xs text-[#00e5b4] hover:text-[#00c49a] font-medium transition-colors"
                 >
-                  View all
+                  View all →
                 </Link>
               </div>
 
@@ -542,8 +547,8 @@ export default async function DashboardPage() {
               <QuickAction
                 title="Add funding source"
                 description="Link a card to keep your wallet topped up automatically."
-                href="/dashboard/payments"
-                cta="Manage funding"
+                href="/dashboard/wallet"
+                cta="Manage wallet"
               />
               <QuickAction
                 title="Generate MCP token"

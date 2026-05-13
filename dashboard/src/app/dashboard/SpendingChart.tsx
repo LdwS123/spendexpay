@@ -93,10 +93,28 @@ export default function SpendingChart({ data }: { data: DayData[] }) {
         </ResponsiveContainer>
       ) : (
         <div
-          className="flex items-center justify-center text-xs text-slate-400"
+          className="flex flex-col items-center justify-center text-center px-6"
           style={{ height: 200 }}
         >
-          No spending data for this period
+          <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-100">
+            <svg
+              className="h-4 w-4 text-slate-300"
+              fill="none"
+              viewBox="0 0 16 16"
+              stroke="currentColor"
+              strokeWidth={1.6}
+              aria-hidden="true"
+            >
+              <path
+                d="M2 12l3.5-4 3 2.5L13 4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
+            Your spending chart will appear here as your agent makes purchases.
+          </p>
         </div>
       )}
     </div>
