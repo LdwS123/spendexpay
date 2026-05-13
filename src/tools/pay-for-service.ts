@@ -24,6 +24,7 @@ import { DEV_MODE } from "../config.js";
 import {
   createConsentRequest,
   getActiveVirtualCardForUser,
+  getMonthlyCategorySpendUsd,
   getMonthlySpendUsd,
   getOrCreateConsentPreferences,
   getRulesForUser,
@@ -35,6 +36,7 @@ import {
   type SpendexUser,
 } from "../lib/db.js";
 import { acquireIdempotencyKey, releaseIdempotencyKey } from "../lib/idempotency.js";
+import { classifyIntent, type IntentClassification } from "../lib/intent-classifier.js";
 import { retrieveCardDetails, type RevealedCardDetails } from "../lib/stripe-issuing.js";
 import { authenticateToolCall } from "../lib/tool-auth.js";
 
@@ -522,9 +524,14 @@ async function evaluateRules(params: {
   amountUsd: number;
   userMaxAutoCharge: number;
   rules: SpendexRule[];
+  classification: IntentClassification;
 }): Promise<string | null> {
-  const { userId, service, amountUsd, userMaxAutoCharge, rules } = params;
+  const { userId, service, amountUsd, userMaxAutoCharge, rules, classification } = params;
   const normalizedService = service.toLowerCase();
+  const classificationCategory = (typeof classification.category === "string"
+    ? classification.category
+    : "unknown"
+  ).toLowerCase();
 
   // 1. Merchant allow/block lists — cheapest checks.
   for (const rule of rules) {
@@ -545,6 +552,54 @@ async function evaluateRules(params: {
           "ask the user to add it at spendexai.com/dashboard/rules or use one of the permitted services"
         );
       }
+    }
+  }
+
+  // 1.5 Smart rules — category blocklist, risk threshold, urgency-requires-
+  //     consent. These run BEFORE the numeric caps so a clearly-disallowed
+  //     category (gambling, crypto, …) declines with the specific reason
+  //     rather than getting swallowed by a generic "per-transaction cap"
+  //     message. Category caps that need a DB read come later (step 4.5).
+  for (const rule of rules) {
+    // category_blocklist — decline if the LLM-classified category is in the
+    // user's blocklist. Match is case-insensitive.
+    if (rule.category_blocklist && rule.category_blocklist.length > 0) {
+      const blockedCats = rule.category_blocklist.map((c) => c.toLowerCase());
+      if (blockedCats.includes(classificationCategory)) {
+        return declineMessage(
+          `the category "${classificationCategory}" is on the user's blocked-categories list ` +
+          `(classifier reasoning: ${classification.reasoning})`,
+          "ask the user to remove it from spendexai.com/dashboard/rules or pick a different merchant"
+        );
+      }
+    }
+
+    // risk_threshold — decline if the LLM risk score exceeds the user's cap.
+    if (
+      rule.risk_threshold !== null &&
+      rule.risk_threshold !== undefined &&
+      classification.risk_score > rule.risk_threshold
+    ) {
+      return declineMessage(
+        `this purchase has an AI risk score of ${classification.risk_score}/100, ` +
+        `above the user's threshold of ${rule.risk_threshold} ` +
+        `(classifier reasoning: ${classification.reasoning})`,
+        "ask the user to confirm explicitly via request_user_consent, " +
+        "or pick a less risky merchant"
+      );
+    }
+
+    // urgency_requires_consent — high-urgency purchases need explicit consent.
+    // We don't drive the consent dialog inline here (the consent gate below
+    // handles that); instead we decline with a directive so the agent knows
+    // to call request_user_consent before retrying.
+    if (rule.urgency_requires_consent && classification.urgency === "high") {
+      return declineMessage(
+        `this purchase is classified as high-urgency and the user requires ` +
+        `explicit consent for high-urgency charges ` +
+        `(classifier reasoning: ${classification.reasoning})`,
+        "call request_user_consent first; once the user approves, retry pay_for_service"
+      );
     }
   }
 
@@ -611,6 +666,29 @@ async function evaluateRules(params: {
         `would bring to $${(spent + amountUsd).toFixed(2)})`,
         `ask the user to raise the ${service} monthly cap at spendexai.com/dashboard/rules, ` +
         "wait until next month, or split the charge into smaller pieces"
+      );
+    }
+  }
+
+  // 4.5 Per-category monthly cap — same logic as per-service monthly cap but
+  //     keyed on the classifier's category instead of the merchant name.
+  //     E.g. "max $50/mo on entertainment" applies whether the user spends
+  //     on Netflix, Spotify, or Disney+. DB read only happens when a cap
+  //     for the current category exists, so this is free for users without
+  //     category rules configured.
+  for (const rule of rules) {
+    if (!rule.category_caps) continue;
+    const cap = rule.category_caps[classificationCategory];
+    if (cap === undefined) continue;
+    const spent = await getMonthlyCategorySpendUsd(userId, classificationCategory);
+    if (spent + amountUsd > cap) {
+      return declineMessage(
+        `monthly cap for category "${classificationCategory}" exceeded ` +
+        `($${spent.toFixed(2)} spent, $${cap.toFixed(2)} cap, this charge $${amountUsd.toFixed(2)} ` +
+        `would bring to $${(spent + amountUsd).toFixed(2)})`,
+        `ask the user to raise the ${classificationCategory} category cap at ` +
+        "spendexai.com/dashboard/rules, wait until next month, or pick a merchant " +
+        "in a different category"
       );
     }
   }
@@ -783,6 +861,22 @@ export function registerPayForServiceTool(server: McpServer): void {
         );
       }
 
+      // Smart rules — classify the intent BEFORE rule evaluation so the
+      // category / urgency / risk_score can drive the new rule types
+      // (category_blocklist, risk_threshold, urgency_requires_consent,
+      // category_max_per_month). `classifyIntent` never throws: any failure
+      // (timeout, missing API key, network error) is funnelled into a
+      // neutral "unknown" classification with risk_score=50 so the static
+      // numeric caps still protect the user. We persist the classification
+      // on every audit_log row downstream — that dataset powers the
+      // dashboard's category analytics regardless of whether the user has
+      // opted in to smart rules yet.
+      const classification = await classifyIntent({
+        service: input.service,
+        description: input.description,
+        amount_usd: input.amount_usd,
+      });
+
       let refusal: string | null;
       try {
         refusal = await evaluateRules({
@@ -791,6 +885,7 @@ export function registerPayForServiceTool(server: McpServer): void {
           amountUsd: input.amount_usd,
           userMaxAutoCharge: user.max_auto_charge_usd,
           rules,
+          classification,
         });
       } catch (evalErr) {
         return textResponse(
@@ -942,6 +1037,15 @@ export function registerPayForServiceTool(server: McpServer): void {
             amountUsd: input.amount_usd,
             description: input.description,
             transactionType: "one_shot",
+            intentMetadata: {
+              category: classification.category,
+              subcategory: classification.subcategory,
+              urgency: classification.urgency,
+              risk_score: classification.risk_score,
+              reasoning: classification.reasoning,
+              source: classification.source,
+              model: classification.model,
+            },
           });
         } catch (logErr) {
           const incidentId = randomUUID();

@@ -212,6 +212,14 @@ interface LogTransactionParams {
   // Optional classification fields — kept optional for backwards compat.
   transactionType?: string;
   agentId?: string;
+  /**
+   * LLM-classified intent metadata (category / urgency / risk_score / …)
+   * captured at authorization time. Persisted on every row so the dashboard
+   * and category-cap evaluator have a per-transaction view. Optional so
+   * legacy callers (consent-pending audit rows, webhook updates) don't have
+   * to populate it.
+   */
+  intentMetadata?: Record<string, unknown>;
 }
 
 interface LogIssuingAuthorizationParams {
@@ -281,6 +289,7 @@ export async function logTransaction(params: LogTransactionParams): Promise<void
     error_message: params.error ?? null,
     transaction_type: params.transactionType ?? null,
     agent_id: params.agentId ?? null,
+    intent_metadata: params.intentMetadata ?? null,
     created_at: new Date().toISOString(),
   });
 
@@ -341,6 +350,35 @@ export interface SpendexRule {
    * layering as above relative to the global `max_per_transaction_usd`.
    */
   per_service_per_tx_cap_usd: number | null;
+  // ── Smart rules (migration 016) ───────────────────────────────────────
+  // All four fields below are optional on the SpendexRule type so legacy
+  // call sites (and the dozens of tests that construct synthetic rule rows)
+  // keep compiling without listing every smart-rule field. The runtime
+  // evaluator treats `undefined` and `null` the same way.
+  /**
+   * Categories the user has explicitly blocked (e.g. "gambling", "crypto").
+   * Evaluated against the LLM-classified intent category, NOT the service
+   * name. null/undefined when the user has no category blocklist configured.
+   */
+  category_blocklist?: string[] | null;
+  /**
+   * Per-category monthly caps (e.g. {"shopping": 200, "dev_tools": 500}).
+   * Cumulated against successful audit_logs.intent_metadata->category for
+   * the calendar month. null/undefined when no category caps exist.
+   */
+  category_caps?: Record<string, number> | null;
+  /**
+   * Maximum LLM risk score (0-100) the user is willing to auto-approve.
+   * A classification with `risk_score > risk_threshold` is declined.
+   * null/undefined when no risk threshold rule exists.
+   */
+  risk_threshold?: number | null;
+  /**
+   * When true, any classification with `urgency = "high"` requires explicit
+   * consent — the tool declines and asks the agent to call
+   * request_user_consent first. Defaults to false.
+   */
+  urgency_requires_consent?: boolean;
   /** Soft-delete / pause flag. */
   active: boolean;
 }
@@ -395,6 +433,12 @@ export async function getRulesForUser(
   // one place rather than juggling a separate global block list.
   const perServiceBlocked: string[] = [];
 
+  // Smart rules (migration 016) — populated when the user has opted in.
+  let categoryBlocklist: string[] | null = null;
+  let categoryCaps: Record<string, number> | null = null;
+  let riskThreshold: number | null = null;
+  let urgencyRequiresConsent = false;
+
   const normalizedTargetService = service.toLowerCase();
 
   for (const row of rows) {
@@ -440,6 +484,42 @@ export async function getRulesForUser(
           perServicePerTxCap = params.per_tx_cap_usd;
         }
       }
+    } else if (
+      row.rule_type === "category_blocklist" &&
+      Array.isArray(params.categories)
+    ) {
+      const cats = params.categories.filter(
+        (c): c is string => typeof c === "string" && c.length > 0
+      );
+      categoryBlocklist = [...(categoryBlocklist ?? []), ...cats];
+    } else if (
+      row.rule_type === "category_max_per_month" &&
+      typeof params.category === "string" &&
+      typeof params.usd === "number"
+    ) {
+      // Tighter wins when the user has more than one row for the same
+      // category (legacy / drift). Stored lower-cased so lookups match the
+      // classification output (which we also lower-case).
+      const key = params.category.toLowerCase();
+      if (categoryCaps === null) categoryCaps = {};
+      const prev = categoryCaps[key];
+      if (prev === undefined || params.usd < prev) {
+        categoryCaps[key] = params.usd;
+      }
+    } else if (
+      row.rule_type === "risk_threshold" &&
+      typeof params.threshold === "number"
+    ) {
+      const clamped = Math.max(0, Math.min(100, Math.round(params.threshold)));
+      // Tighter wins.
+      if (riskThreshold === null || clamped < riskThreshold) {
+        riskThreshold = clamped;
+      }
+    } else if (
+      row.rule_type === "urgency_requires_consent" &&
+      params.enabled === true
+    ) {
+      urgencyRequiresConsent = true;
     }
   }
 
@@ -460,6 +540,10 @@ export async function getRulesForUser(
     blocked_services: blocked,
     per_service_monthly_cap_usd: perServiceMonthlyCap,
     per_service_per_tx_cap_usd: perServicePerTxCap,
+    category_blocklist: categoryBlocklist,
+    category_caps: categoryCaps,
+    risk_threshold: riskThreshold,
+    urgency_requires_consent: urgencyRequiresConsent,
     active: true,
   }];
 }
@@ -518,6 +602,50 @@ export async function getMonthlySpendUsdForService(
   service: string
 ): Promise<number> {
   return getMonthlySpendUsd(userId, service);
+}
+
+/**
+ * Sum successful spend for a given LLM-classified category in the current
+ * calendar month. Filters audit_logs on `intent_metadata->>'category' = X`
+ * — the column is JSONB so we use the `->>'category'` text accessor for the
+ * equality match. Rows without intent_metadata simply do not match.
+ *
+ * Used by the smart-rules engine when a `category_max_per_month` rule is
+ * active. Returns 0 if no matching rows or on any DB error (best-effort: a
+ * monthly-cap evaluator must not block a charge when the read fails — the
+ * caller wraps this in a try/catch and surfaces a clear infrastructure
+ * error instead).
+ */
+export async function getMonthlyCategorySpendUsd(
+  userId: string,
+  category: string
+): Promise<number> {
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+
+  const { data, error } = await supabase
+    .from("audit_logs")
+    .select("amount_usd")
+    .eq("user_id", userId)
+    .eq("status", "success")
+    .gte("created_at", monthStart)
+    // PostgREST exposes JSONB field-as-text via `->>` syntax. The column was
+    // added in migration 016; legacy rows (intent_metadata = null) simply
+    // don't match.
+    .eq("intent_metadata->>category", category);
+
+  if (error) {
+    console.error(
+      `[db] getMonthlyCategorySpendUsd: failed for user ${userId} ` +
+      `category "${category}": ${error.message} (code: ${error.code}).`
+    );
+    throw new Error(
+      `Could not compute monthly category spend (${error.message}). The charge was not attempted.`
+    );
+  }
+
+  const rows = (data ?? []) as Array<{ amount_usd: number | null }>;
+  return rows.reduce<number>((sum, row) => sum + (row.amount_usd ?? 0), 0);
 }
 
 // ---------------------------------------------------------------------------

@@ -33,6 +33,14 @@ interface PostBody {
   // array or undefined → clear any existing per-service rules for this
   // user. Missing fields on an entry are treated as "no cap on that axis".
   per_service_limits?: PerServiceLimit[];
+  // Smart rules (migration 016). All four fields are optional so a legacy
+  // client that doesn't send them leaves the existing rows alone (no-op
+  // deactivate+nothing). Server-side validation is the same shape used by
+  // the runtime rules evaluator in src/lib/db.ts.
+  category_blocklist?: string[] | null;
+  category_caps?: Record<string, number> | null;
+  risk_threshold?: number | null;
+  urgency_requires_consent?: boolean | null;
 }
 
 interface PerServiceLimit {
@@ -137,6 +145,22 @@ export async function GET(): Promise<NextResponse> {
       }
     }
 
+    // ── Smart rules (migration 016) ──────────────────────────────────────
+    // Surface the four new rule types so the dashboard "Smart rules"
+    // section can render their current values. Each field collapses one
+    // or more rows in the rules table.
+    const categoryBlocklistRule = rules.find((r) => r.rule_type === "category_blocklist");
+    const riskThresholdRule = rules.find((r) => r.rule_type === "risk_threshold");
+    const urgencyConsentRule = rules.find((r) => r.rule_type === "urgency_requires_consent");
+    const categoryCaps: Record<string, number> = {};
+    for (const r of rules) {
+      if (r.rule_type !== "category_max_per_month") continue;
+      const category = r.params?.category;
+      const usd = r.params?.usd;
+      if (typeof category !== "string" || typeof usd !== "number") continue;
+      categoryCaps[category.toLowerCase()] = usd;
+    }
+
     return NextResponse.json(
       {
         max_auto_charge_usd: user?.max_auto_charge_usd ?? 0,
@@ -144,6 +168,14 @@ export async function GET(): Promise<NextResponse> {
         allowed_services: (allowedServicesRule?.params?.services as string[]) ?? null,
         blocked_services: (blockedServicesRule?.params?.services as string[]) ?? null,
         per_service_limits: Array.from(perServiceMap.values()),
+        category_blocklist:
+          (categoryBlocklistRule?.params?.categories as string[] | undefined) ?? null,
+        category_caps: Object.keys(categoryCaps).length > 0 ? categoryCaps : null,
+        risk_threshold:
+          typeof riskThresholdRule?.params?.threshold === "number"
+            ? (riskThresholdRule.params.threshold as number)
+            : null,
+        urgency_requires_consent: urgencyConsentRule?.params?.enabled === true,
         rules,
       },
       { status: 200 }
@@ -456,6 +488,168 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             { error: "Failed to save per-service caps" },
             { status: 500 }
           );
+        }
+      }
+    }
+
+    // 6. Smart rules (migration 016). Same deactivate-then-insert pattern
+    //    used by the other rule types. Smart-rule fields are OPT-IN — a
+    //    POST without them is a no-op for that field (we still deactivate
+    //    any existing rows so a payload with `null` does clear them).
+
+    // category_blocklist
+    if (body.category_blocklist !== undefined) {
+      const blocklist = body.category_blocklist;
+      const validBlocklist =
+        blocklist === null
+          ? null
+          : Array.isArray(blocklist) && blocklist.every((c) => typeof c === "string")
+            ? blocklist
+            : undefined;
+      if (validBlocklist === undefined) {
+        return NextResponse.json(
+          { error: "category_blocklist must be an array of strings or null" },
+          { status: 400 }
+        );
+      }
+
+      const { error: deactivateErr } = await admin
+        .from("rules")
+        .update({ active: false })
+        .eq("user_id", userId)
+        .eq("rule_type", "category_blocklist");
+      if (deactivateErr) {
+        console.error("[api/rules] POST: deactivate category_blocklist error:", deactivateErr);
+        return NextResponse.json({ error: "Failed to update category blocklist" }, { status: 500 });
+      }
+      if (validBlocklist !== null && validBlocklist.length > 0) {
+        const { error: insertErr } = await admin.from("rules").insert({
+          user_id: userId,
+          rule_type: "category_blocklist",
+          params: { categories: validBlocklist.map((c) => c.toLowerCase()) },
+          active: true,
+        });
+        if (insertErr) {
+          console.error("[api/rules] POST: insert category_blocklist error:", insertErr);
+          return NextResponse.json({ error: "Failed to save category blocklist" }, { status: 500 });
+        }
+      }
+    }
+
+    // category_caps (one row per category with a non-empty cap)
+    if (body.category_caps !== undefined) {
+      const caps = body.category_caps;
+      if (
+        caps !== null &&
+        (typeof caps !== "object" ||
+          Object.values(caps).some((v) => typeof v !== "number" || v < 0))
+      ) {
+        return NextResponse.json(
+          { error: "category_caps must be a {category: number} map or null" },
+          { status: 400 }
+        );
+      }
+
+      const { error: deactivateErr } = await admin
+        .from("rules")
+        .update({ active: false })
+        .eq("user_id", userId)
+        .eq("rule_type", "category_max_per_month");
+      if (deactivateErr) {
+        console.error("[api/rules] POST: deactivate category_caps error:", deactivateErr);
+        return NextResponse.json({ error: "Failed to update category caps" }, { status: 500 });
+      }
+
+      if (caps !== null) {
+        type CategoryCapInsert = {
+          user_id: string;
+          rule_type: "category_max_per_month";
+          params: { category: string; usd: number };
+          active: boolean;
+        };
+        const rows: CategoryCapInsert[] = [];
+        for (const [category, usd] of Object.entries(caps)) {
+          if (typeof usd !== "number" || usd <= 0) continue;
+          rows.push({
+            user_id: userId,
+            rule_type: "category_max_per_month",
+            params: { category: category.toLowerCase(), usd },
+            active: true,
+          });
+        }
+        if (rows.length > 0) {
+          const { error: insertErr } = await admin.from("rules").insert(rows);
+          if (insertErr) {
+            console.error("[api/rules] POST: insert category_caps error:", insertErr);
+            return NextResponse.json({ error: "Failed to save category caps" }, { status: 500 });
+          }
+        }
+      }
+    }
+
+    // risk_threshold (single integer 0-100; null clears the rule)
+    if (body.risk_threshold !== undefined) {
+      const threshold = body.risk_threshold;
+      if (
+        threshold !== null &&
+        (typeof threshold !== "number" || threshold < 0 || threshold > 100)
+      ) {
+        return NextResponse.json(
+          { error: "risk_threshold must be a number 0-100 or null" },
+          { status: 400 }
+        );
+      }
+      const { error: deactivateErr } = await admin
+        .from("rules")
+        .update({ active: false })
+        .eq("user_id", userId)
+        .eq("rule_type", "risk_threshold");
+      if (deactivateErr) {
+        console.error("[api/rules] POST: deactivate risk_threshold error:", deactivateErr);
+        return NextResponse.json({ error: "Failed to update risk threshold" }, { status: 500 });
+      }
+      if (threshold !== null) {
+        const { error: insertErr } = await admin.from("rules").insert({
+          user_id: userId,
+          rule_type: "risk_threshold",
+          params: { threshold: Math.round(threshold) },
+          active: true,
+        });
+        if (insertErr) {
+          console.error("[api/rules] POST: insert risk_threshold error:", insertErr);
+          return NextResponse.json({ error: "Failed to save risk threshold" }, { status: 500 });
+        }
+      }
+    }
+
+    // urgency_requires_consent (boolean toggle, no params)
+    if (body.urgency_requires_consent !== undefined) {
+      const enabled = body.urgency_requires_consent;
+      if (enabled !== null && typeof enabled !== "boolean") {
+        return NextResponse.json(
+          { error: "urgency_requires_consent must be a boolean or null" },
+          { status: 400 }
+        );
+      }
+      const { error: deactivateErr } = await admin
+        .from("rules")
+        .update({ active: false })
+        .eq("user_id", userId)
+        .eq("rule_type", "urgency_requires_consent");
+      if (deactivateErr) {
+        console.error("[api/rules] POST: deactivate urgency_requires_consent error:", deactivateErr);
+        return NextResponse.json({ error: "Failed to update urgency consent rule" }, { status: 500 });
+      }
+      if (enabled === true) {
+        const { error: insertErr } = await admin.from("rules").insert({
+          user_id: userId,
+          rule_type: "urgency_requires_consent",
+          params: { enabled: true },
+          active: true,
+        });
+        if (insertErr) {
+          console.error("[api/rules] POST: insert urgency_requires_consent error:", insertErr);
+          return NextResponse.json({ error: "Failed to save urgency consent rule" }, { status: 500 });
         }
       }
     }

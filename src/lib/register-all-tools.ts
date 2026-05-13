@@ -43,6 +43,7 @@ import { registerCheckBalanceTool } from "../tools/check-balance.js";
 import { registerCheckRulesTool } from "../tools/check-rules.js";
 import { registerListServicesTool } from "../tools/list-services.js";
 import { registerCheckAnomaliesTool } from "../tools/check-anomalies.js";
+import { registerClassifyPurchaseIntentTool } from "../tools/classify-purchase-intent.js";
 
 // Legacy fallbacks — kept for backwards compatibility. Prefer pay_for_service.
 import { registerDeployVercelTool } from "../tools/deploy-vercel.js";
@@ -114,6 +115,10 @@ export function registerAllTools(server: McpServer): void {
   registerCheckRulesTool(server);
   registerListServicesTool(server);
   registerCheckAnomaliesTool(server);
+  // Smart-rules preview — agents call this to "self-check" a purchase
+  // intent (category / urgency / risk score) before committing to
+  // pay_for_service. Sits in INTROSPECTION because it never moves money.
+  registerClassifyPurchaseIntentTool(server);
 
   // ---------------------------------------------------------------------------
   // LEGACY FALLBACK: per-merchant tools kept for backwards compatibility.

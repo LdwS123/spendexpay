@@ -10,7 +10,29 @@ interface RulesPayload {
   allowed_services: string[] | null;
   blocked_services: string[] | null;
   per_service_limits: PerServiceLimit[];
+  // Smart rules (migration 016) — all four fields are opt-in and the server
+  // treats `null` / missing as "clear / do not change". Sent every time
+  // here so a "Save rules" click syncs the current UI state exactly.
+  category_blocklist: string[] | null;
+  category_caps: Record<string, number> | null;
+  risk_threshold: number | null;
+  urgency_requires_consent: boolean;
 }
+
+// Categories the LLM classifier produces. Mirrors the IntentCategory union in
+// src/lib/intent-classifier.ts — kept in sync manually because this is a
+// separate Next.js app with its own tsconfig.
+const SMART_CATEGORIES: ReadonlyArray<{ slug: string; label: string }> = [
+  { slug: "dev_tools", label: "Dev tools" },
+  { slug: "shopping", label: "Shopping" },
+  { slug: "subscription", label: "Subscriptions" },
+  { slug: "food", label: "Food" },
+  { slug: "travel", label: "Travel" },
+  { slug: "gambling", label: "Gambling" },
+  { slug: "crypto", label: "Crypto" },
+  { slug: "gift_cards", label: "Gift cards" },
+  { slug: "cash_advance", label: "Cash advance" },
+];
 
 interface PerServiceLimit {
   service: string;
@@ -75,6 +97,18 @@ export default function RulesPage() {
   const [perServiceLimits, setPerServiceLimits] = useState<Record<string, PerServiceLimit>>({});
   const [customServiceDraft, setCustomServiceDraft] = useState("");
 
+  // ── Smart rules state ────────────────────────────────────────────────
+  // Each piece of state mirrors one of the four smart rule_types added in
+  // migration 016. UI defaults are "no rule" (empty list / null) so a fresh
+  // user does not have anything blocked until they explicitly opt in.
+  const [categoryBlocklist, setCategoryBlocklist] = useState<string[]>([]);
+  const [categoryCaps, setCategoryCaps] = useState<Record<string, string>>({});
+  // Stored as a string so the slider can bind cleanly to a controlled input.
+  // 80 is the default "Decline if risk > 80" used by the inline classifier.
+  const [riskThreshold, setRiskThreshold] = useState<string>("80");
+  const [riskThresholdEnabled, setRiskThresholdEnabled] = useState<boolean>(false);
+  const [urgencyRequiresConsent, setUrgencyRequiresConsent] = useState<boolean>(false);
+
   // Stable ids for label/input association — required for screen readers
   // to announce the field name when the input receives focus.
   const perTxId = useId();
@@ -104,6 +138,10 @@ export default function RulesPage() {
           allowed_services: string[] | null;
           blocked_services: string[] | null;
           per_service_limits?: PerServiceLimit[];
+          category_blocklist?: string[] | null;
+          category_caps?: Record<string, number> | null;
+          risk_threshold?: number | null;
+          urgency_requires_consent?: boolean | null;
         };
 
         if (cancelled) return;
@@ -123,6 +161,24 @@ export default function RulesPage() {
             map[entry.service.toLowerCase()] = entry;
           }
           setPerServiceLimits(map);
+        }
+        // Smart rules — null in the payload means "rule not configured".
+        if (Array.isArray(data.category_blocklist)) {
+          setCategoryBlocklist(data.category_blocklist.map((c) => c.toLowerCase()));
+        }
+        if (data.category_caps && typeof data.category_caps === "object") {
+          const caps: Record<string, string> = {};
+          for (const [k, v] of Object.entries(data.category_caps)) {
+            if (typeof v === "number" && v > 0) caps[k.toLowerCase()] = String(v);
+          }
+          setCategoryCaps(caps);
+        }
+        if (typeof data.risk_threshold === "number") {
+          setRiskThreshold(String(data.risk_threshold));
+          setRiskThresholdEnabled(true);
+        }
+        if (data.urgency_requires_consent === true) {
+          setUrgencyRequiresConsent(true);
         }
       } catch (err) {
         if (!cancelled) {
@@ -224,6 +280,15 @@ export default function RulesPage() {
       }
     );
 
+    // Smart rule serialisation — null means "clear the rule" on the server.
+    const categoryCapsPayload: Record<string, number> = {};
+    for (const [cat, raw] of Object.entries(categoryCaps)) {
+      const n = parseFloat(raw);
+      if (Number.isFinite(n) && n > 0) categoryCapsPayload[cat] = n;
+    }
+
+    const parsedRisk = parseInt(riskThreshold, 10);
+
     const payload: RulesPayload = {
       max_auto_charge_usd: Math.max(0, parseFloat(perTx) || 0),
       monthly_budget: Math.max(0, parseFloat(monthlyBudget) || 0),
@@ -232,6 +297,11 @@ export default function RulesPage() {
       allowed_services: null,
       blocked_services: blockedMerchants.length > 0 ? blockedMerchants : null,
       per_service_limits: perServiceArray,
+      category_blocklist: categoryBlocklist.length > 0 ? categoryBlocklist : null,
+      category_caps: Object.keys(categoryCapsPayload).length > 0 ? categoryCapsPayload : null,
+      risk_threshold:
+        riskThresholdEnabled && Number.isFinite(parsedRisk) ? parsedRisk : null,
+      urgency_requires_consent: urgencyRequiresConsent,
     };
 
     try {
@@ -564,6 +634,177 @@ export default function RulesPage() {
               >
                 Add
               </button>
+            </div>
+          </section>
+
+          {/* ── Smart rules (LLM-classified intents) ───────────────────── */}
+          <section className="border-t border-slate-50 pt-5">
+            <div className="mb-3">
+              <label className="block text-sm font-semibold text-[#070d18] mb-1">
+                Smart rules
+                <span className="ml-2 inline-flex items-center rounded-full bg-[#00e5b4]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#00876a]">
+                  AI
+                </span>
+              </label>
+              <p className="text-xs text-slate-500">
+                Every purchase is classified by Claude Haiku before the rules engine
+                runs — category (e.g. shopping, gambling), urgency, and a risk score
+                from 0&ndash;100. Use the controls below to layer rules on top of that
+                classification. Static caps above still apply.
+              </p>
+            </div>
+
+            {/* Block categories */}
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-[#070d18] mb-2">Block categories</p>
+              <p className="text-xs text-slate-500 mb-2">
+                Any purchase the classifier puts in one of these buckets is declined,
+                even if the merchant is otherwise allowed.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {SMART_CATEGORIES.map((cat) => {
+                  const active = categoryBlocklist.includes(cat.slug);
+                  return (
+                    <button
+                      key={cat.slug}
+                      type="button"
+                      disabled={loading}
+                      onClick={() => {
+                        setCategoryBlocklist((prev) =>
+                          prev.includes(cat.slug)
+                            ? prev.filter((c) => c !== cat.slug)
+                            : [...prev, cat.slug]
+                        );
+                      }}
+                      aria-pressed={active}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        active
+                          ? "bg-red-50 border-red-200 text-red-700"
+                          : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Category caps */}
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-[#070d18] mb-2">Monthly category caps</p>
+              <p className="text-xs text-slate-500 mb-2">
+                E.g. {CURRENCY_SYMBOL}50/month on shopping, {CURRENCY_SYMBOL}500/month on dev tools.
+                Leave blank to inherit the global monthly budget.
+              </p>
+              <div className="rounded-lg border border-slate-100 divide-y divide-slate-100">
+                {SMART_CATEGORIES.map((cat) => {
+                  const value = categoryCaps[cat.slug] ?? "";
+                  return (
+                    <div
+                      key={cat.slug}
+                      className="flex items-center gap-3 px-3 py-2.5"
+                    >
+                      <span className="min-w-[110px] text-sm font-medium text-[#070d18]">
+                        {cat.label}
+                      </span>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                          {CURRENCY_SYMBOL}
+                        </span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          disabled={loading}
+                          value={value}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            setCategoryCaps((prev) => {
+                              const next = { ...prev };
+                              if (raw === "" || parseFloat(raw) <= 0 || !Number.isFinite(parseFloat(raw))) {
+                                delete next[cat.slug];
+                              } else {
+                                next[cat.slug] = raw;
+                              }
+                              return next;
+                            });
+                          }}
+                          placeholder="Monthly cap"
+                          aria-label={`${cat.label} monthly cap`}
+                          className="w-32 border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#00e5b4] focus:border-[#00e5b4] disabled:bg-slate-50 disabled:text-slate-500"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Risk threshold slider */}
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-[#070d18]">
+                  Risk threshold
+                  <span className="ml-2 text-[11px] font-normal text-slate-400">
+                    {riskThresholdEnabled ? `Decline if score > ${riskThreshold}` : "Disabled"}
+                  </span>
+                </p>
+                <label className="inline-flex items-center gap-2 text-xs text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={riskThresholdEnabled}
+                    onChange={(e) => setRiskThresholdEnabled(e.target.checked)}
+                    disabled={loading}
+                    className="accent-[#00e5b4]"
+                  />
+                  Enable
+                </label>
+              </div>
+              <p className="text-xs text-slate-500 mb-2">
+                The classifier scores every purchase from 0 (trivially safe) to 100
+                (clearly fraudulent). Purchases above your threshold are declined and
+                surfaced for explicit consent.
+              </p>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                disabled={loading || !riskThresholdEnabled}
+                value={riskThreshold}
+                onChange={(e) => setRiskThreshold(e.target.value)}
+                aria-label="Risk score threshold"
+                className="w-full accent-[#00e5b4]"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                <span>0 — safe</span>
+                <span>50</span>
+                <span>100 — risky</span>
+              </div>
+            </div>
+
+            {/* Urgency consent toggle */}
+            <div>
+              <label className="flex items-start gap-3 rounded-lg border border-slate-100 bg-white p-3 cursor-pointer hover:border-slate-200 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={urgencyRequiresConsent}
+                  onChange={(e) => setUrgencyRequiresConsent(e.target.checked)}
+                  disabled={loading}
+                  className="mt-0.5 accent-[#00e5b4]"
+                />
+                <div>
+                  <p className="text-sm font-medium text-[#070d18]">
+                    Require consent for high-urgency purchases
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                    When the classifier marks a purchase as high-urgency, your agent
+                    must call <code className="font-mono text-[11px] bg-slate-100 px-1 rounded">request_user_consent</code>{" "}
+                    before charging. Useful for catching impulse buys driven by urgency framing.
+                  </p>
+                </div>
+              </label>
             </div>
           </section>
 
