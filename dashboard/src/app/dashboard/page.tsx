@@ -496,47 +496,40 @@ export default async function DashboardPage() {
                     body="Charges appear here the first time your agent calls a Spendex Pay tool."
                   />
                 ) : (
-                  <div className="overflow-x-auto">
-                  <table className="w-full text-sm min-w-[420px]">
-                    <thead>
-                      <tr className="border-b border-slate-100">
-                        <th className="text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-5 py-3">
-                          Service
-                        </th>
-                        <th className="text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-4 py-3 hidden sm:table-cell">
-                          Description
-                        </th>
-                        <th className="text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-4 py-3 hidden md:table-cell">
-                          Date
-                        </th>
-                        <th className="text-right text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-4 py-3">
-                          Amount
-                        </th>
-                        <th className="text-right text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-5 py-3">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {data.recentTransactions.map((tx) => (
-                        <tr key={tx.id} className="hover:bg-slate-50/60 transition-colors">
-                          <td className="px-5 py-3.5 font-medium text-[#0a1220]">
-                            {serviceName(tx.service)}
-                          </td>
-                          <td className="px-4 py-3.5 text-slate-500 text-xs truncate max-w-[180px] hidden sm:table-cell">
-                            {tx.description ?? tx.transaction_type ?? "—"}
-                          </td>
-                          <td className="px-4 py-3.5 text-slate-400 text-xs hidden md:table-cell">
-                            {formatDate(tx.created_at)}
-                          </td>
-                          <td className="px-4 py-3.5 text-right font-semibold text-[#0a1220]">
+                  <div className="divide-y divide-slate-50">
+                    {data.recentTransactions.map((tx) => (
+                      <Link
+                        key={tx.id}
+                        href={`/dashboard/transactions/${tx.id}`}
+                        aria-label={`Transaction ${serviceName(tx.service)} ${tx.amount_usd !== null ? formatEur(tx.amount_usd) : ""} on ${formatDate(tx.created_at)}, status ${tx.status}`}
+                        className="relative flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4] focus-visible:ring-inset"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-[#0a1220]">
+                              {serviceName(tx.service)}
+                            </span>
+                            <span className="text-[11px] text-slate-400 hidden md:inline">
+                              · {formatDate(tx.created_at)}
+                            </span>
+                          </div>
+                          {(tx.description || tx.transaction_type) && (
+                            <p className="text-xs text-slate-500 mt-0.5 truncate max-w-md">
+                              {tx.description ?? tx.transaction_type}
+                            </p>
+                          )}
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <div className="text-sm font-semibold text-[#0a1220] tabular-nums">
                             {tx.amount_usd !== null ? formatEur(tx.amount_usd) : "—"}
-                          </td>
-                          <td className="px-5 py-3.5 text-right">{statusBadge(tx.status)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+                          <div className="mt-1">{statusBadge(tx.status)}</div>
+                        </div>
+                        <svg className="w-4 h-4 text-slate-300 shrink-0" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                          <path d="M6 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </Link>
+                    ))}
                   </div>
                 )}
               </div>
