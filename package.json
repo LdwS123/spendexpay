@@ -5,7 +5,8 @@
   "type": "module",
   "bin": {
     "spendex": "./dist/index.js",
-    "@spendexai/mcp": "./dist/index.js"
+    "@spendexai/mcp": "./dist/index.js",
+    "spendexpay-mcp": "./dist/cli/index.js"
   },
   "main": "./dist/index.js",
   "files": [
@@ -50,9 +51,11 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.2",
+    "@inquirer/prompts": "^8.4.3",
     "@modelcontextprotocol/ext-apps": "^1.7.1",
     "@modelcontextprotocol/sdk": "^1.12.0",
     "@supabase/supabase-js": "^2.45.0",
+    "commander": "^14.0.3",
     "dotenv": "^17.4.2",
     "express": "^4.19.0",
     "stripe": "^16.0.0",

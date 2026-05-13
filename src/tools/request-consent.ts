@@ -720,18 +720,23 @@ export function registerRequestConsentTool(server: McpServer): void {
     "request_user_consent",
     {
       description:
-        "Ask the user to confirm a high-stakes action (auto-signup at a new " +
-        "merchant, large or recurring charge, anything destructive) BEFORE " +
-        "committing to it. Honors the user's saved preferences: small charges " +
-        "under their auto-approve threshold or actions on trusted services " +
-        "return APPROVED immediately with no prompt shown. Otherwise returns " +
-        "IMMEDIATELY (non-blocking) with a Spendex-branded consent dialog " +
-        "rendered inline in chat. Hosts without UI widget support degrade to " +
-        "the same structured markdown prompt the agent has always parsed — " +
-        "the agent then calls `submit_consent_decision` with the user's " +
-        "choice, or polls `check_consent_status` if the user steps away. " +
-        "SKIP for routine small charges already covered by spending rules — " +
-        "`pay_for_service` enforces those server-side.",
+        "**Renders a decision dialog inline in the user's chat** asking them " +
+        "to approve or decline a high-stakes action — signup at a new " +
+        "merchant, large/recurring charge, or anything they should choose " +
+        "rather than have happen automatically. This is the ONLY moment the " +
+        "user is asked to make a decision; everything else flows around it. " +
+        "Auto-skip: small charges under the user's auto-approve threshold " +
+        "OR on trusted/whitelisted services return APPROVED immediately with " +
+        "no prompt — the user keeps their flow uninterrupted. Otherwise the " +
+        "tool returns IMMEDIATELY (non-blocking) with: (a) a Spendex-branded " +
+        "MCP App widget the host renders inline (Claude Code, Cursor, Atlas), " +
+        "and (b) a structured markdown fallback parseable by any host. The " +
+        "agent then calls `submit_consent_decision` with the user's choice, " +
+        "or polls `check_consent_status` if the user steps away. " +
+        "Use BEFORE `signup_to_service` and BEFORE `pay_for_service` for any " +
+        "charge above the user's auto-approve threshold. SKIP for routine " +
+        "small charges already covered by spending rules — `pay_for_service` " +
+        "enforces those server-side.",
       inputSchema: RequestConsentInput.shape,
       _meta: { ui: { resourceUri: CONSENT_DIALOG_RESOURCE_URI } },
     },

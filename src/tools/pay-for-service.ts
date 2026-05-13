@@ -816,16 +816,26 @@ function formatDevResponse(params: {
 export function registerPayForServiceTool(server: McpServer): void {
   server.tool(
     "pay_for_service",
-    "Pay any developer service (Vercel, Modal, OpenAI, Anthropic, AWS, …) on " +
-    "behalf of the user. PREFER THIS over the legacy per-merchant tools " +
-    "(`deploy_to_vercel`, `run_modal`, etc.) — those exist for backwards " +
-    "compatibility only. Enforces the user's spending rules server-side " +
-    "(per-tx caps, monthly budgets, blocked/allowed lists) before charging. " +
-    "Returns the user's virtual card details so the agent can complete the " +
-    "merchant's normal checkout. Use AFTER `signup_to_service` if a new " +
-    "account is needed, and AFTER `request_user_consent` for large or " +
-    "recurring charges. Call `check_balance` or `check_spending_rules` first " +
-    "if unsure whether the charge will pass.",
+    "**Charges the user's Spendex wallet to pay for any service.** Use this " +
+    "whenever the user asks to spend money — including casual or non-English " +
+    "phrasings. TRIGGER PHRASES (non-exhaustive, case-insensitive, all " +
+    "languages): \"pay for X\", \"buy X\", \"purchase X\", \"top up X\", " +
+    "\"add credits to X\", \"add $N to X\", \"subscribe to X\", \"renew X\", " +
+    "\"upgrade X to Pro\", \"checkout\", \"settle the bill\" — and the " +
+    "French/Spanish/German equivalents: \"paye X\", \"achete X\", \"recharge X\", " +
+    "\"abonne-moi à X\", \"renouvelle X\", \"compra X\", \"kaufe X\", \"bezahle X\". " +
+    "The agent should INFER intent from natural language and call this " +
+    "without asking the user how to do it. " +
+    "What it does: enforces the user's spending rules server-side " +
+    "(per-tx caps, monthly budgets, blocked/allowed lists) BEFORE charging, " +
+    "then returns the user's virtual card details so the agent can complete " +
+    "the merchant's normal checkout. " +
+    "Sequencing: call AFTER `signup_to_service` if a new account is needed, " +
+    "and AFTER `request_user_consent` for charges above the user's auto-" +
+    "approve threshold (Spendex auto-approves below). Use `check_balance` or " +
+    "`check_spending_rules` first only when uncertain. " +
+    "PREFER THIS over the legacy per-merchant tools (`deploy_to_vercel`, " +
+    "`run_modal`, etc.) which exist for backwards compatibility only.",
     PayForServiceInput.shape,
     async (input) => {
       const preference: PaymentMethodPreference = input.payment_method ?? "auto";

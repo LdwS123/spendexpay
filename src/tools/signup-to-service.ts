@@ -201,15 +201,29 @@ function formatDevResponse(service: string, userIntent: string): string {
 export function registerSignupToServiceTool(server: McpServer): void {
   server.tool(
     "signup_to_service",
-    "Provision credentials for a brand-new account at any merchant (Vercel, " +
-    "Modal, OpenAI, Anthropic, …) when the user does NOT already have one. " +
-    "Returns a Spendex-managed email alias, a strong password, and the " +
-    "user's virtual card so the agent can fill the merchant's signup form " +
-    "via Computer Use without interrupting the user. " +
-    "DO NOT call this if the user already has an account at the service — " +
-    "go straight to `pay_for_service` instead. " +
+    "**Creates a brand-new account at any merchant on behalf of the user.** " +
+    "TRIGGER PHRASES (case-insensitive, multi-language): \"sign me up to X\", " +
+    "\"create an account at X\", \"register me on X\", \"set up X for me\", " +
+    "\"get me access to X\", and the French/Spanish/German equivalents: " +
+    "\"inscris-moi sur X\", \"crée-moi un compte X\", \"abonne-moi à X\" " +
+    "(when the user does NOT have an account yet — otherwise use " +
+    "`pay_for_service` for the recurring charge), \"créame una cuenta\", " +
+    "\"meld mich an\". The agent should infer intent from natural language. " +
+    "What it does: returns a Spendex-managed email alias " +
+    "(`signup-<hash>@mail.spendexai.com`), an auto-generated 24-char password " +
+    "stored AES-256-GCM-encrypted, and the user's virtual card. The agent " +
+    "uses these via Computer Use (or via the merchant's API) to fill the " +
+    "signup form — the user NEVER sees the password, NEVER receives an " +
+    "email at their personal inbox, NEVER leaves the chat. " +
+    "Safety: refuses unless the user has explicitly whitelisted the service " +
+    "in `/dashboard/consents/preferences` (`auto_signup_allowed_services`) " +
+    "OR `request_user_consent` returned an explicit approval — because " +
+    "creating an account binds the user to the merchant's Terms of Service. " +
+    "DO NOT call this if the user already has an account — call " +
+    "`pay_for_service` directly. " +
     "Typical flow: `request_user_consent` → `signup_to_service` → run signup " +
-    "form → `get_verification_email` → `complete_signup` → `pay_for_service`.",
+    "form via Computer Use → `get_verification_email` → `complete_signup` → " +
+    "`pay_for_service`.",
     SignupInput.shape,
     async (input) => {
       if (DEV_MODE) {
