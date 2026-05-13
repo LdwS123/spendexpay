@@ -25,6 +25,7 @@ interface PreferencesResponse {
   default_mode?: DefaultMode | null;
   threshold_usd?: number | null;
   trusted_services?: string[] | null;
+  auto_signup_allowed_services?: string[] | null;
   telegram_chat_id?: string | null;
   email_enabled?: boolean | null;
   telegram_enabled?: boolean | null;
@@ -53,6 +54,7 @@ export default function ConsentPreferencesPage() {
   const [mode, setMode] = useState<DefaultMode>("always_ask");
   const [threshold, setThreshold] = useState<string>("50");
   const [trusted, setTrusted] = useState<string[]>([]);
+  const [autoSignupAllowed, setAutoSignupAllowed] = useState<string[]>([]);
   const [telegramEnabled, setTelegramEnabled] = useState<boolean>(false);
   const [telegramChatId, setTelegramChatId] = useState<string>("");
 
@@ -97,6 +99,9 @@ export default function ConsentPreferencesPage() {
         }
         if (Array.isArray(body.trusted_services)) {
           setTrusted(body.trusted_services);
+        }
+        if (Array.isArray(body.auto_signup_allowed_services)) {
+          setAutoSignupAllowed(body.auto_signup_allowed_services);
         }
         setTelegramEnabled(Boolean(body.telegram_enabled));
         if (body.telegram_chat_id) setTelegramChatId(body.telegram_chat_id);
@@ -152,6 +157,12 @@ export default function ConsentPreferencesPage() {
     );
   }
 
+  function toggleAutoSignup(id: string) {
+    setAutoSignupAllowed((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  }
+
   async function save() {
     setSaveState("saving");
     setSaveError(null);
@@ -171,6 +182,7 @@ export default function ConsentPreferencesPage() {
           threshold_usd: thresholdValue,
           trusted_services:
             mode === "auto_for_trusted_services" ? trusted : null,
+          auto_signup_allowed_services: autoSignupAllowed,
           telegram_enabled: telegramEnabled,
           telegram_chat_id: telegramChatId.trim() || null,
           push_enabled: pushEnabled,
@@ -382,6 +394,49 @@ export default function ConsentPreferencesPage() {
             title="Never auto-approve"
             subtitle="Manual confirmation every single time. Most strict."
           />
+        </div>
+
+        {/* ── Auto-signup whitelist ── */}
+        <div className="bg-white rounded-xl border border-slate-100 p-6 space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-[#0a1220]">
+              Auto-signup whitelist
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Services where Spendex can create an account on your behalf
+              without asking first. Signing up binds you to the service&apos;s
+              Terms — only enable for services you trust.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {SERVICE_CHOICES.map((s) => {
+              const active = autoSignupAllowed.includes(s.id);
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => toggleAutoSignup(s.id)}
+                  aria-pressed={active}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    active
+                      ? "bg-[#00e5b4] border-[#00e5b4] text-[#070d18]"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {autoSignupAllowed.length === 0 && (
+            <p className="text-[11px] text-slate-400 italic">
+              No services whitelisted. Every signup will require your approval
+              in chat.
+            </p>
+          )}
         </div>
 
         {/* ── Notifications ── */}
