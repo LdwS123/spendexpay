@@ -3,15 +3,24 @@
  * buy?" string into a structured (category, urgency, risk_score) record that
  * the smart-rules engine can evaluate against the user's contextual rules.
  *
- * Powered by Claude Haiku 4.5 via the Anthropic SDK. Three guardrails:
+ * Powered by a pluggable backend (Anthropic Haiku 4.5 by default, optionally
+ * a local Ollama model). The backend is selected via the `CLASSIFIER_BACKEND`
+ * env var. The orchestration layer (DEV_MODE bypass, cache lookup, cache
+ * write, fallback on backend failure) stays identical regardless of the
+ * backend chosen.
+ *
+ * Three guardrails:
  *
  *   1. DEV_MODE bypass — returns a deterministic fake classification so
  *      tests and local runs never make a network call.
- *   2. Missing-key fallback — if `ANTHROPIC_API_KEY` is not set we return a
- *      neutral "unknown" classification rather than blocking the charge.
- *      Smart rules are opt-in; the static numeric caps still protect the user.
- *   3. Timeout — 5 seconds. If the LLM is slow we return the same "unknown"
- *      fallback rather than holding up an MCP tool call.
+ *   2. Missing-key / unreachable-backend fallback — if the chosen backend
+ *      cannot serve (missing key, network error, timeout, malformed
+ *      response) we return a neutral "unknown" classification rather than
+ *      blocking the charge. Smart rules are opt-in; the static numeric
+ *      caps still protect the user.
+ *   3. Timeout — 5 seconds. The backend's `classify()` is responsible for
+ *      its own AbortController; the orchestrator never holds up an MCP
+ *      tool call.
  *
  * Persistence: every successful classification is cached in
  * `intent_classifications` for 7 days, keyed by SHA-256 of the
@@ -23,6 +32,11 @@ import { createHash } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import { DEV_MODE } from "../config.js";
 import { getSupabase } from "./db.js";
+// The Ollama backend lives in a sibling file. Importing it statically is
+// safe because Ollama is a class — instantiation is deferred until the
+// factory chooses it. The cyclic dependency on the types exported above
+// resolves naturally for type-only imports in the dependent module.
+import { OllamaBackend } from "./intent-classifier-ollama.js";
 
 // ---------------------------------------------------------------------------
 // Public shape
@@ -60,13 +74,30 @@ export interface ClassifyParams {
   amount_usd: number;
 }
 
+/**
+ * A pluggable classifier backend. The orchestrator (`classifyIntent` below)
+ * owns caching, DEV_MODE bypass, and fallback. Backends only do the actual
+ * inference call — keep them small.
+ */
+export interface ClassifierBackend {
+  /** Human-readable backend name, surfaced in logs and the `model` field. */
+  name: string;
+  /**
+   * Run inference and return a parsed classification, or null on any
+   * failure (timeout, malformed response, missing config). Must never
+   * throw — the orchestrator turns null into the static fallback.
+   */
+  classify(params: ClassifyParams): Promise<IntentClassification | null>;
+}
+
 // ---------------------------------------------------------------------------
-// Constants
+// Constants — shared by all backends
 // ---------------------------------------------------------------------------
 
-const MODEL_ID = "claude-haiku-4-5-20251001";
-const CLASSIFY_TIMEOUT_MS = 5_000;
-const SYSTEM_PROMPT =
+export const MODEL_ID = "claude-haiku-4-5-20251001";
+export const CLASSIFY_TIMEOUT_MS = 5_000;
+
+export const SYSTEM_PROMPT =
   "You are a purchase-intent classifier for an AI agent wallet (Spendex). " +
   "Given a merchant + description + amount, output a structured classification " +
   "the rules engine uses to decide whether to authorize the charge.\n\n" +
@@ -165,6 +196,55 @@ export function buildDescriptionHash(params: ClassifyParams): string {
     "|" +
     bucketAmount(params.amount_usd);
   return createHash("sha256").update(canonical).digest("hex");
+}
+
+// ---------------------------------------------------------------------------
+// Shared validation — used by every backend that wants the same clamping
+// and shape rules. Exported so OllamaBackend can reuse it.
+// ---------------------------------------------------------------------------
+
+/**
+ * Validate and normalize a raw classification object from any backend.
+ * Returns null when the object doesn't have the required fields in the
+ * expected shape. `risk_score` is clamped to [0, 100]; any unknown or
+ * empty category falls back to "unknown".
+ *
+ * Exported so backend implementations can reuse the same rules.
+ */
+export function normalizeClassification(
+  raw: Record<string, unknown>,
+  modelLabel: string
+): IntentClassification | null {
+  const category = raw["category"];
+  const urgency = raw["urgency"];
+  const riskScore = raw["risk_score"];
+  const reasoning = raw["reasoning"];
+  const subcategoryRaw = raw["subcategory"];
+
+  if (typeof category !== "string" || category.length === 0) return null;
+  if (urgency !== "low" && urgency !== "medium" && urgency !== "high") return null;
+  if (typeof riskScore !== "number" || !Number.isFinite(riskScore)) return null;
+  if (typeof reasoning !== "string") return null;
+
+  const clampedRisk = Math.max(0, Math.min(100, Math.round(riskScore)));
+  const subcategory =
+    typeof subcategoryRaw === "string" && subcategoryRaw.length > 0
+      ? subcategoryRaw
+      : null;
+
+  // Empty string category — treat as unknown so the rules engine has a
+  // valid label to evaluate against.
+  const normalizedCategory = category.trim().length === 0 ? "unknown" : category;
+
+  return {
+    category: normalizedCategory,
+    subcategory,
+    urgency,
+    risk_score: clampedRisk,
+    reasoning,
+    source: "llm",
+    model: modelLabel,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -281,7 +361,7 @@ export async function cacheClassification(
 }
 
 // ---------------------------------------------------------------------------
-// LLM call
+// Anthropic Haiku backend
 // ---------------------------------------------------------------------------
 
 let _anthropic: Anthropic | null = null;
@@ -301,6 +381,122 @@ function getAnthropicClient(): Anthropic | null {
 export function resetAnthropicClientForTests(): void {
   _anthropic = null;
 }
+
+interface AnthropicToolUseBlock {
+  type: "tool_use";
+  name: string;
+  input: Record<string, unknown>;
+}
+
+interface AnthropicTextBlock {
+  type: "text";
+  text: string;
+}
+
+type AnthropicContentBlock = AnthropicToolUseBlock | AnthropicTextBlock;
+
+function isToolUseBlock(block: AnthropicContentBlock): block is AnthropicToolUseBlock {
+  return block.type === "tool_use";
+}
+
+/**
+ * Anthropic Haiku 4.5 backend. Uses tool-use forced output for strict JSON.
+ * Returns null on any failure mode (missing key, network error, malformed
+ * response, no tool_use block).
+ */
+export class AnthropicHaikuBackend implements ClassifierBackend {
+  public readonly name = "anthropic-haiku-4.5";
+
+  async classify(params: ClassifyParams): Promise<IntentClassification | null> {
+    const client = getAnthropicClient();
+    if (client === null) {
+      // No API key configured. Return null so the orchestrator falls back.
+      return null;
+    }
+
+    const userMessage =
+      `service: ${params.service}\n` +
+      `amount_usd: ${params.amount_usd}\n` +
+      `description: ${params.description}`;
+
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), CLASSIFY_TIMEOUT_MS);
+
+      let response;
+      try {
+        response = await client.messages.create(
+          {
+            model: MODEL_ID,
+            max_tokens: 400,
+            system: SYSTEM_PROMPT,
+            tools: [CLASSIFICATION_TOOL],
+            tool_choice: { type: "tool", name: CLASSIFICATION_TOOL.name },
+            messages: [{ role: "user", content: userMessage }],
+          },
+          { signal: controller.signal }
+        );
+      } finally {
+        clearTimeout(timer);
+      }
+
+      const content = response.content as AnthropicContentBlock[];
+      for (const block of content) {
+        if (!isToolUseBlock(block)) continue;
+        if (block.name !== CLASSIFICATION_TOOL.name) continue;
+        const parsed = normalizeClassification(block.input, MODEL_ID);
+        if (parsed) return parsed;
+      }
+      console.error(
+        `[intent-classifier] AnthropicHaikuBackend: response had no valid tool_use block ` +
+        `for service=${params.service}`
+      );
+      return null;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(
+        `[intent-classifier] AnthropicHaikuBackend: error during classify call: ${message}`
+      );
+      return null;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Backend factory
+// ---------------------------------------------------------------------------
+
+let _backend: ClassifierBackend | null = null;
+
+/**
+ * Resolve the active classifier backend from the `CLASSIFIER_BACKEND` env
+ * var. Defaults to "anthropic" (preserves legacy behaviour). The backend is
+ * cached after first lookup — tests can reset via `resetBackendForTests()`.
+ */
+export function getClassifierBackend(): ClassifierBackend {
+  if (_backend !== null) return _backend;
+
+  const choice = (process.env["CLASSIFIER_BACKEND"] ?? "anthropic").toLowerCase();
+  if (choice === "ollama") {
+    _backend = new OllamaBackend();
+  } else {
+    _backend = new AnthropicHaikuBackend();
+  }
+  return _backend;
+}
+
+/**
+ * Reset the cached backend instance. Test-only — exported for unit tests
+ * that flip `CLASSIFIER_BACKEND` between cases.
+ */
+export function resetBackendForTests(): void {
+  _backend = null;
+  _anthropic = null;
+}
+
+// ---------------------------------------------------------------------------
+// Fallback + dev mode
+// ---------------------------------------------------------------------------
 
 const FALLBACK_CLASSIFICATION: Omit<IntentClassification, "source"> = {
   category: "unknown",
@@ -365,108 +561,6 @@ function makeDevClassification(params: ClassifyParams): IntentClassification {
   };
 }
 
-interface AnthropicToolUseBlock {
-  type: "tool_use";
-  name: string;
-  input: Record<string, unknown>;
-}
-
-interface AnthropicTextBlock {
-  type: "text";
-  text: string;
-}
-
-type AnthropicContentBlock = AnthropicToolUseBlock | AnthropicTextBlock;
-
-function isToolUseBlock(block: AnthropicContentBlock): block is AnthropicToolUseBlock {
-  return block.type === "tool_use";
-}
-
-function parseClassificationToolInput(input: Record<string, unknown>): IntentClassification | null {
-  const category = input["category"];
-  const urgency = input["urgency"];
-  const riskScore = input["risk_score"];
-  const reasoning = input["reasoning"];
-  const subcategoryRaw = input["subcategory"];
-
-  if (typeof category !== "string" || category.length === 0) return null;
-  if (urgency !== "low" && urgency !== "medium" && urgency !== "high") return null;
-  if (typeof riskScore !== "number" || !Number.isFinite(riskScore)) return null;
-  if (typeof reasoning !== "string") return null;
-
-  const clampedRisk = Math.max(0, Math.min(100, Math.round(riskScore)));
-  const subcategory =
-    typeof subcategoryRaw === "string" && subcategoryRaw.length > 0
-      ? subcategoryRaw
-      : null;
-
-  return {
-    category,
-    subcategory,
-    urgency,
-    risk_score: clampedRisk,
-    reasoning,
-    source: "llm",
-    model: MODEL_ID,
-  };
-}
-
-/**
- * Call the Anthropic API and parse the tool-use response. Returns null on
- * any failure mode (network error, malformed response, no tool_use block).
- * The caller turns null into the static fallback.
- */
-async function callAnthropic(
-  client: Anthropic,
-  params: ClassifyParams
-): Promise<IntentClassification | null> {
-  const userMessage =
-    `service: ${params.service}\n` +
-    `amount_usd: ${params.amount_usd}\n` +
-    `description: ${params.description}`;
-
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), CLASSIFY_TIMEOUT_MS);
-
-    let response;
-    try {
-      response = await client.messages.create(
-        {
-          model: MODEL_ID,
-          max_tokens: 400,
-          system: SYSTEM_PROMPT,
-          tools: [CLASSIFICATION_TOOL],
-          tool_choice: { type: "tool", name: CLASSIFICATION_TOOL.name },
-          messages: [{ role: "user", content: userMessage }],
-        },
-        { signal: controller.signal }
-      );
-    } finally {
-      clearTimeout(timer);
-    }
-
-    const content = response.content as AnthropicContentBlock[];
-    for (const block of content) {
-      if (!isToolUseBlock(block)) continue;
-      if (block.name !== CLASSIFICATION_TOOL.name) continue;
-      const parsed = parseClassificationToolInput(block.input);
-      if (parsed) return parsed;
-    }
-    console.error(
-      `[intent-classifier] callAnthropic: response had no valid tool_use block ` +
-      `for service=${params.service}`
-    );
-    return null;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(
-      `[intent-classifier] callAnthropic: error during classify call: ${message}`
-    );
-    return null;
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
@@ -476,9 +570,8 @@ async function callAnthropic(
  *
  *   1. DEV_MODE → deterministic fake classification (no network).
  *   2. Cache hit (7-day TTL) → return immediately.
- *   3. Anthropic API call (5s timeout, tool-use forced JSON).
- *   4. Static fallback ("unknown" / risk_score=50) on any failure or when
- *      ANTHROPIC_API_KEY is unset.
+ *   3. Active backend's classify() (5s timeout, structured output).
+ *   4. Static fallback ("unknown" / risk_score=50) on any failure.
  *
  * Never throws — every failure mode is funnelled into a valid classification
  * so `pay_for_service` can rely on always getting a structured answer.
@@ -494,17 +587,10 @@ export async function classifyIntent(
   const cached = await getCachedClassification(hash);
   if (cached) return cached;
 
-  const client = getAnthropicClient();
-  if (client === null) {
-    // No API key configured. Smart rules are opt-in, so we return a neutral
-    // fallback rather than blocking the charge — the static numeric caps
-    // still protect the user.
-    return makeFallback("ANTHROPIC_API_KEY not configured");
-  }
-
-  const classified = await callAnthropic(client, params);
+  const backend = getClassifierBackend();
+  const classified = await backend.classify(params);
   if (classified === null) {
-    return makeFallback("classification timed out or failed");
+    return makeFallback(`${backend.name}: classification unavailable; using neutral fallback`);
   }
 
   await cacheClassification({

@@ -66,3 +66,11 @@ test-results/
 # Misc
 .cache/
 .turbo/
+
+# Fine-tuning artefacts — datasets, adapters, fused models, GGUFs. All large
+# binary or PII-containing files; rebuild via scripts/finetune/ instead of
+# checking them in.
+data/
+adapters/
+fused-model/
+*.gguf

@@ -21,7 +21,11 @@
     "start:http": "node dist/http-server.js",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run build && npm test",
+    "finetune:export": "tsx scripts/finetune/01-export-dataset.ts",
+    "finetune:synth": "tsx scripts/finetune/02-synthesize-examples.ts",
+    "finetune:prepare": "tsx scripts/finetune/03-prepare-mlx-data.ts",
+    "finetune:eval": "tsx scripts/finetune/05-evaluate.ts"
   },
   "keywords": [
     "mcp",
