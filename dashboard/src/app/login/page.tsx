@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { SpendexMark } from "@/components/SpendexMark";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sign-in page — premium light aesthetic to match the dashboard shell.
@@ -124,19 +125,10 @@ export default function LoginPage() {
       {/* Header strip — wordmark only, like Linear's auth pages */}
       <header className="px-6 py-5 sm:px-10 sm:py-6">
         <div className="flex items-center gap-2.5">
-          <span className="relative flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#070d18] overflow-hidden">
-            <span className="absolute inset-0 bg-gradient-to-br from-[#00e5b4]/0 via-transparent to-[#00e5b4]/30" />
-            <svg className="h-3.5 w-3.5 relative" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M3 11.5C3 11.5 5 13 8 13C11 13 13 11.5 13 9.5C13 6 3 7 3 4C3 2 5 1 8 1C10.5 1 13 2.5 13 4.5"
-                stroke="#00e5b4"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+          <SpendexMark size={26} decorative />
+          <span className="text-[14px] font-semibold tracking-tight text-spendex-dark">
+            Spendex<span className="text-spendex-purple">AI</span>
           </span>
-          <span className="text-[14px] font-semibold tracking-tight">Spendex</span>
         </div>
       </header>
 
@@ -144,11 +136,11 @@ export default function LoginPage() {
         <div className="w-full max-w-[400px]">
           {/* Title block */}
           <div className="mb-7 text-center">
-            <h1 className="text-[26px] font-semibold tracking-[-0.02em] leading-tight">
-              Sign in to Spendex
+            <h1 className="text-[26px] font-semibold tracking-[-0.02em] leading-tight text-spendex-dark">
+              Sign in to SpendexAI
             </h1>
             <p className="mt-2 text-[14px] text-slate-500">
-              Continue to your agent&apos;s wallet
+              Payments infrastructure for AI agents
             </p>
           </div>
 
@@ -169,7 +161,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => handleOAuth("github")}
                 disabled={anyPending}
-                className="group relative flex w-full items-center justify-center gap-2.5 rounded-lg bg-[#0a1220] px-4 py-2.5 text-[13.5px] font-medium text-white transition-all hover:bg-[#0f1828] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]/60 focus-visible:ring-offset-2"
+                className="group relative flex w-full items-center justify-center gap-2.5 rounded-lg bg-spendex-dark px-4 py-2.5 text-[13.5px] font-medium text-white transition-all hover:bg-[#1a1f2c] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-spendex-purple focus-visible:ring-offset-2"
               >
                 {pending === "github" ? <SpinIcon /> : <GithubIcon />}
                 <span>Continue with GitHub</span>
@@ -179,7 +171,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => handleOAuth("google")}
                 disabled={anyPending}
-                className="group relative flex w-full items-center justify-center gap-2.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-[13.5px] font-medium text-slate-900 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]/60 focus-visible:ring-offset-2"
+                className="group relative flex w-full items-center justify-center gap-2.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-[13.5px] font-medium text-spendex-dark transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-spendex-purple focus-visible:ring-offset-2"
               >
                 {pending === "google" ? <SpinIcon /> : <GoogleIcon />}
                 <span>Continue with Google</span>
@@ -251,7 +243,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={anyPending}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#00e5b4] px-4 py-2.5 text-[13.5px] font-semibold text-[#070d18] transition-all hover:bg-[#00c89e] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4]/60 focus-visible:ring-offset-2"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-spendex-purple px-4 py-2.5 text-[13.5px] font-semibold text-white transition-all hover:bg-[#5b48ff] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-spendex-purple/60 focus-visible:ring-offset-2"
               >
                 {pending === "email" ? (
                   <>
@@ -270,14 +262,14 @@ export default function LoginPage() {
             Need access?{" "}
             <a
               href="mailto:support@spendexai.com"
-              className="font-medium text-slate-900 hover:text-[#00b894] transition-colors"
+              className="font-medium text-spendex-dark hover:text-spendex-purple transition-colors"
             >
-              Contact Spendex
+              Contact SpendexAI
             </a>
           </p>
 
           <p className="mt-3 text-center text-[10.5px] uppercase tracking-[0.14em] text-slate-400">
-            Agent finance · Governed wallet
+            Payments infrastructure for AI agents
           </p>
         </div>
       </div>

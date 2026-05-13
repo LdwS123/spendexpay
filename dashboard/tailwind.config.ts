@@ -9,6 +9,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // SpendexAI brand palette (2026 refresh)
+        spendex: {
+          purple: "#6D5BFF",   // primary accent — CTAs, active states, indicator dot
+          blue: "#3B82F6",     // secondary accent — links, secondary CTAs
+          cyan: "#00D4FF",     // tertiary accent — gradient stops, decorative
+          light: "#E6E8EE",    // soft surfaces, dividers
+          dark: "#0D0F14",     // headings, primary text on light bg
+        },
+        // Legacy palette — kept for unmigrated surfaces. Prefer `spendex.*`
+        // for new code; remove these once the V1 refresh is fully shipped.
         navy: {
           950: "#070d18",
           900: "#0a1220",

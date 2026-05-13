@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { SpendexMark } from "@/components/SpendexMark";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sidebar — premium light aesthetic.
@@ -166,19 +167,14 @@ export default function Sidebar({ email }: SidebarProps) {
       {/* Workspace header */}
       <div className="px-5 pt-5 pb-4 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          {/* Custom mark — small rounded square with internal geometry */}
-          <span className="relative flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#070d18] overflow-hidden">
-            <span className="absolute inset-0 bg-gradient-to-br from-[#00e5b4]/0 via-transparent to-[#00e5b4]/30" />
-            <svg className="h-3.5 w-3.5 relative" viewBox="0 0 16 16" fill="none">
-              <path d="M3 11.5C3 11.5 5 13 8 13C11 13 13 11.5 13 9.5C13 6 3 7 3 4C3 2 5 1 8 1C10.5 1 13 2.5 13 4.5" stroke="#00e5b4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
+          {/* SpendexAI brand mark — interlocking S, no container tile. */}
+          <SpendexMark size={28} decorative />
           <span className="min-w-0">
-            <span className="block text-[14px] font-semibold leading-tight tracking-tight text-slate-900">
-              Spendex
+            <span className="block text-[14px] font-semibold leading-tight tracking-tight text-spendex-dark">
+              Spendex<span className="text-spendex-purple">AI</span>
             </span>
             <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400 mt-0.5">
-              Agent finance
+              Payments for AI agents
             </span>
           </span>
         </Link>
@@ -211,17 +207,17 @@ export default function Sidebar({ email }: SidebarProps) {
                 <Link
                   href={item.href}
                   aria-current={active ? "page" : undefined}
-                  className={`group relative flex items-center gap-3 rounded-md pl-3 pr-2 py-1.5 text-[13px] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5b4] focus-visible:ring-offset-2 ${
+                  className={`group relative flex items-center gap-3 rounded-md pl-3 pr-2 py-1.5 text-[13px] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-spendex-purple focus-visible:ring-offset-2 ${
                     active
-                      ? "bg-slate-100 text-slate-900 font-medium"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-spendex-purple/8 text-spendex-dark font-medium"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-spendex-dark"
                   }`}
                 >
-                  {/* Tiny teal indicator dot at left edge when active */}
+                  {/* Purple indicator pill at left edge when active */}
                   {active && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-[#00e5b4]" aria-hidden="true" />
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-spendex-purple" aria-hidden="true" />
                   )}
-                  <span className={`shrink-0 transition-colors ${active ? "text-[#00b894]" : "text-slate-400 group-hover:text-slate-600"}`}>
+                  <span className={`shrink-0 transition-colors ${active ? "text-spendex-purple" : "text-slate-400 group-hover:text-slate-600"}`}>
                     {item.icon(active)}
                   </span>
                   <span className="flex-1 truncate">{item.label}</span>
@@ -272,14 +268,12 @@ export default function Sidebar({ email }: SidebarProps) {
       <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between bg-white px-4 h-14 border-b border-slate-200">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 font-semibold text-slate-900 tracking-tight text-base"
+          className="flex items-center gap-2 font-semibold text-spendex-dark tracking-tight text-base"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#070d18]">
-            <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none">
-              <path d="M3 11.5C3 11.5 5 13 8 13C11 13 13 11.5 13 9.5C13 6 3 7 3 4C3 2 5 1 8 1C10.5 1 13 2.5 13 4.5" stroke="#00e5b4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+          <SpendexMark size={26} decorative />
+          <span>
+            Spendex<span className="text-spendex-purple">AI</span>
           </span>
-          Spendex
         </Link>
         <button
           type="button"
